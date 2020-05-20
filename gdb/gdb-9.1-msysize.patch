@@ -1,0 +1,2337 @@
+diff -Naur gdb-9.1-orig/ar-lib gdb-9.1/ar-lib
+--- gdb-9.1-orig/ar-lib	2018-06-27 00:37:28.000000000 +0300
++++ gdb-9.1/ar-lib	2020-04-19 11:44:58.912221900 +0300
+@@ -53,7 +53,7 @@
+ 	  MINGW*)
+ 	    file_conv=mingw
+ 	    ;;
+-	  CYGWIN*)
++	  CYGWIN*|MSYS*)
+ 	    file_conv=cygwin
+ 	    ;;
+ 	  *)
+@@ -65,7 +65,7 @@
+ 	mingw)
+ 	  file=`cmd //C echo "$file " | sed -e 's/"\(.*\) " *$/\1/'`
+ 	  ;;
+-	cygwin)
++	cygwin|msys)
+ 	  file=`cygpath -m "$file" || echo "$file"`
+ 	  ;;
+ 	wine)
+diff -Naur gdb-9.1-orig/bfd/acinclude.m4 gdb-9.1/bfd/acinclude.m4
+--- gdb-9.1-orig/bfd/acinclude.m4	2020-02-08 15:50:13.000000000 +0300
++++ gdb-9.1/bfd/acinclude.m4	2020-04-19 11:28:05.708492000 +0300
+@@ -21,7 +21,7 @@
+ [AC_REQUIRE([AC_CANONICAL_TARGET])
+ case "${host}" in
+ changequote(,)dnl
+-*-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
++*-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-msys* | *-*-windows*)
+ changequote([,])dnl
+   AC_DEFINE(USE_BINARY_FOPEN, 1, [Use b modifier when opening binary files?]) ;;
+ esac])dnl
+diff -Naur gdb-9.1-orig/bfd/config.bfd gdb-9.1/bfd/config.bfd
+--- gdb-9.1-orig/bfd/config.bfd	2020-02-08 15:50:13.000000000 +0300
++++ gdb-9.1/bfd/config.bfd	2020-04-19 11:28:06.244197200 +0300
+@@ -699,7 +699,7 @@
+     targ_archs="$targ_archs bfd_arm_arch"
+     want64=true
+     ;;
+-  x86_64-*-mingw* | x86_64-*-pe | x86_64-*-pep | x86_64-*-cygwin)
++  x86_64-*-mingw* | x86_64-*-pe | x86_64-*-pep | x86_64-*-cygwin | x86_64-*-msys)
+     targ_defvec=x86_64_pe_vec
+     targ_selvecs="x86_64_pe_vec x86_64_pei_vec x86_64_pe_be_vec x86_64_elf64_vec l1om_elf64_vec k1om_elf64_vec i386_pe_vec i386_pei_vec i386_elf32_vec iamcu_elf32_vec"
+     want64=true
+@@ -749,7 +749,7 @@
+     targ_defvec=i386_elf32_vec
+     targ_selvecs="iamcu_elf32_vec i386_coff_vec"
+     ;;
+-  i[3-7]86-*-mingw32* | i[3-7]86-*-cygwin* | i[3-7]86-*-winnt | i[3-7]86-*-pe)
++  i[3-7]86-*-mingw32* | i[3-7]86-*-cygwin* | i[3-7]86-*-msys* | i[3-7]86-*-winnt | i[3-7]86-*-pe)
+     targ_defvec=i386_pe_vec
+     targ_selvecs="i386_pe_vec i386_pei_vec i386_elf32_vec iamcu_elf32_vec"
+     targ_underscore=yes
+diff -Naur gdb-9.1-orig/bfd/configure gdb-9.1/bfd/configure
+--- gdb-9.1-orig/bfd/configure	2020-02-08 15:50:13.000000000 +0300
++++ gdb-9.1/bfd/configure	2020-04-19 11:28:06.607211600 +0300
+@@ -6297,7 +6297,7 @@
+     lt_cv_sys_max_cmd_len=-1;
+     ;;
+ 
+-  cygwin* | mingw* | cegcc*)
++  cygwin* | msys* | mingw* | cegcc*)
+     # On Win9x/ME, this test blows up -- it succeeds, but takes
+     # about 5 minutes as the teststring grows exponentially.
+     # Worse, since 9x/ME are not pre-emptively multitasking,
+@@ -6639,7 +6639,7 @@
+   lt_cv_file_magic_test_file=/shlib/libc.so
+   ;;
+ 
+-cygwin*)
++cygwin* | msys*)
+   # func_win32_libid is a shell function defined in ltmain.sh
+   lt_cv_deplibs_check_method='file_magic ^x86 archive import|^x86 DLL'
+   lt_cv_file_magic_cmd='func_win32_libid'
+@@ -7219,7 +7219,7 @@
+ aix*)
+   symcode='[BCDT]'
+   ;;
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   symcode='[ABCDGISTW]'
+   ;;
+ hpux*)
+@@ -8803,7 +8803,7 @@
+       # PIC is the default for these OSes.
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | msys* | cygwin* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       # Although the cygwin gcc ignores -fPIC, still need this for old-style
+@@ -8885,7 +8885,7 @@
+       fi
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | msys* | cygwin* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       lt_prog_compiler_pic='-DDLL_EXPORT'
+@@ -9347,7 +9347,7 @@
+   extract_expsyms_cmds=
+ 
+   case $host_os in
+-  cygwin* | mingw* | pw32* | cegcc*)
++  cygwin* | msys* | mingw* | pw32* | cegcc*)
+     # FIXME: the MSVC++ port hasn't been tested in a loooong time
+     # When not using gcc, we currently assume that we are using
+     # Microsoft Visual C++.
+@@ -9462,7 +9462,7 @@
+       fi
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # _LT_TAGVAR(hardcode_libdir_flag_spec, ) is actually meaningless,
+       # as there is no search path for DLLs.
+       hardcode_libdir_flag_spec='-L$libdir'
+@@ -9893,7 +9893,7 @@
+       export_dynamic_flag_spec=-rdynamic
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # When not using gcc, we currently assume that we are using
+       # Microsoft Visual C++.
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+@@ -10794,14 +10794,14 @@
+   # libtool to hard-code these into programs
+   ;;
+ 
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   version_type=windows
+   shrext_cmds=".dll"
+   need_version=no
+   need_lib_prefix=no
+ 
+   case $GCC,$host_os in
+-  yes,cygwin* | yes,mingw* | yes,pw32* | yes,cegcc*)
++  yes,cygwin* | yes,msys* | yes,mingw* | yes,pw32* | yes,cegcc*)
+     library_names_spec='$libname.dll.a'
+     # DLL is installed to $(libdir)/../bin by postinstall_cmds
+     postinstall_cmds='base_file=`basename \${file}`~
+@@ -10825,6 +10825,12 @@
+ 
+       sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"
+       ;;
++    msys*)
++      # Msys DLLs use 'msys-' prefix rather than 'lib'
++      soname_spec='`echo ${libname} | sed -e 's/^lib/msys-/'``echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext}'
++
++      sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"
++      ;;
+     mingw* | cegcc*)
+       # MinGW DLLs use traditional 'lib' prefix
+       soname_spec='${libname}`echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext}'
+@@ -11461,7 +11467,7 @@
+     lt_cv_dlopen_libs=
+     ;;
+ 
+-  cygwin*)
++  cygwin* | msys*)
+     lt_cv_dlopen="dlopen"
+     lt_cv_dlopen_libs=
+     ;;
+@@ -14201,7 +14207,7 @@
+ 
+ 
+ case "${host}" in
+-*-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
++*-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-msys* | *-*-windows*)
+ 
+ $as_echo "#define USE_BINARY_FOPEN 1" >>confdefs.h
+  ;;
+@@ -14413,7 +14419,7 @@
+ 
+ LIBM=
+ case $host in
+-*-*-beos* | *-*-cegcc* | *-*-cygwin* | *-*-haiku* | *-*-pw32* | *-*-darwin*)
++*-*-beos* | *-*-cegcc* | *-*-cygwin* | *-*-msys* | *-*-haiku* | *-*-pw32* | *-*-darwin*)
+   # These system don't have libm, or don't need it
+   ;;
+ *-ncr-sysv4.3*)
+@@ -14568,6 +14574,10 @@
+   *-*-darwin*)
+     SHARED_LIBADD="-L`pwd`/../libiberty/pic -L`pwd`/../intl -liberty -lintl"
+   ;;
++  *-*-msys*)
++    SHARED_LDFLAGS="-no-undefined"
++    SHARED_LIBADD="-L`pwd`/../libiberty -liberty -L`pwd`/../intl -lintl -lmsys-2.0 -lkernel32"
++  ;;
+   esac
+ 
+   if test -n "$SHARED_LIBADD"; then
+diff -Naur gdb-9.1-orig/bfd/configure.ac gdb-9.1/bfd/configure.ac
+--- gdb-9.1-orig/bfd/configure.ac	2020-02-08 15:50:13.000000000 +0300
++++ gdb-9.1/bfd/configure.ac	2020-04-19 11:28:06.996701600 +0300
+@@ -304,6 +304,10 @@
+   *-*-darwin*)
+     SHARED_LIBADD="-L`pwd`/../libiberty/pic -L`pwd`/../intl -liberty -lintl"
+   ;;
++  *-*-msys*)
++    SHARED_LDFLAGS="-no-undefined"
++    SHARED_LIBADD="-L`pwd`/../libiberty -liberty -L`pwd`/../intl -lintl -lmsys-2.0 -lkernel32"
++  ;;
+   esac
+ 
+   if test -n "$SHARED_LIBADD"; then
+diff -Naur gdb-9.1-orig/compile gdb-9.1/compile
+--- gdb-9.1-orig/compile	2014-11-20 18:25:31.000000000 +0300
++++ gdb-9.1/compile	2020-04-19 11:28:06.055710700 +0300
+@@ -53,7 +53,7 @@
+ 	  MINGW*)
+ 	    file_conv=mingw
+ 	    ;;
+-	  CYGWIN*)
++	  CYGWIN*|MSYS*)
+ 	    file_conv=cygwin
+ 	    ;;
+ 	  *)
+@@ -67,7 +67,7 @@
+ 	mingw/*)
+ 	  file=`cmd //C echo "$file " | sed -e 's/"\(.*\) " *$/\1/'`
+ 	  ;;
+-	cygwin/*)
++	cygwin/*|msys/*)
+ 	  file=`cygpath -m "$file" || echo "$file"`
+ 	  ;;
+ 	wine/*)
+diff -Naur gdb-9.1-orig/config/dfp.m4 gdb-9.1/config/dfp.m4
+--- gdb-9.1-orig/config/dfp.m4	2018-11-07 22:00:24.000000000 +0300
++++ gdb-9.1/config/dfp.m4	2020-04-19 11:47:19.136623800 +0300
+@@ -23,7 +23,8 @@
+     powerpc*-*-linux* | i?86*-*-linux* | x86_64*-*-linux* | s390*-*-linux* | \
+     i?86*-*-elfiamcu | i?86*-*-gnu* | x86_64*-*-gnu* | \
+     i?86*-*-mingw* | x86_64*-*-mingw* | \
+-    i?86*-*-cygwin* | x86_64*-*-cygwin*)
++    i?86*-*-cygwin* | x86_64*-*-cygwin* | \
++    i?86*-*-msys* | x86_64*-*-msys*)
+       enable_decimal_float=yes
+       ;;
+     *)
+diff -Naur gdb-9.1-orig/config/elf.m4 gdb-9.1/config/elf.m4
+--- gdb-9.1-orig/config/elf.m4	2015-03-17 17:12:52.000000000 +0300
++++ gdb-9.1/config/elf.m4	2020-04-19 11:28:07.548184100 +0300
+@@ -15,7 +15,7 @@
+ 
+ target_elf=no
+ case $target in
+-  *-darwin* | *-aix* | *-cygwin* | *-mingw* | *-aout* | *-*coff* | \
++  *-darwin* | *-aix* | *-cygwin* |*-msys* |  *-mingw* | *-aout* | *-*coff* | \
+   *-msdosdjgpp* | *-vms* | *-wince* | *-*-pe* | \
+   alpha*-dec-osf* | *-interix* | hppa[[12]]*-*-hpux* | \
+   nvptx-*-none)
+diff -Naur gdb-9.1-orig/config/lthostflags.m4 gdb-9.1/config/lthostflags.m4
+--- gdb-9.1-orig/config/lthostflags.m4	2013-12-22 14:09:55.000000000 +0400
++++ gdb-9.1/config/lthostflags.m4	2020-04-19 11:28:07.900226000 +0300
+@@ -13,7 +13,7 @@
+ AC_REQUIRE([AC_CANONICAL_SYSTEM])
+ 
+ case $host in
+-  *-cygwin* | *-mingw*)
++  *-cygwin* | *-msys* | *-mingw*)
+     # 'host' will be top-level target in the case of a target lib,
+     # we must compare to with_cross_host to decide if this is a native
+     # or cross-compiler and select where to install dlls appropriately.
+diff -Naur gdb-9.1-orig/config/mmap.m4 gdb-9.1/config/mmap.m4
+--- gdb-9.1-orig/config/mmap.m4	2013-12-22 14:09:55.000000000 +0400
++++ gdb-9.1/config/mmap.m4	2020-04-19 11:28:08.082702300 +0300
+@@ -42,7 +42,7 @@
+    # Systems known to be in this category are Windows (all variants),
+    # VMS, and Darwin.
+    case "$host_os" in
+-     *vms* | cygwin* | pe | mingw* | darwin* | ultrix* | hpux10* | hpux11.00)
++     *vms* | cygwin* | msys* | pe | mingw* | darwin* | ultrix* | hpux10* | hpux11.00)
+         gcc_cv_func_mmap_dev_zero=no ;;
+      *)
+         gcc_cv_func_mmap_dev_zero=yes;;
+@@ -74,7 +74,7 @@
+    # above for use of /dev/zero.
+    # Systems known to be in this category are Windows, VMS, and SCO Unix.
+    case "$host_os" in
+-     *vms* | cygwin* | pe | mingw* | sco* | udk* )
++     *vms* | cygwin* | msys* | pe | mingw* | sco* | udk* )
+         gcc_cv_func_mmap_anon=no ;;
+      *)
+         gcc_cv_func_mmap_anon=yes;;
+diff -Naur gdb-9.1-orig/config/picflag.m4 gdb-9.1/config/picflag.m4
+--- gdb-9.1-orig/config/picflag.m4	2018-04-13 18:13:11.000000000 +0300
++++ gdb-9.1/config/picflag.m4	2020-04-19 11:28:08.277173300 +0300
+@@ -25,6 +25,8 @@
+ 	;;
+     i[[34567]]86-*-cygwin* | x86_64-*-cygwin*)
+ 	;;
++    i[[34567]]86-*-msys* | x86_64-*-msys*)
++	;;
+     i[[34567]]86-*-mingw* | x86_64-*-mingw*)
+ 	;;
+     i[[34567]]86-*-interix[[3-9]]*)
+diff -Naur gdb-9.1-orig/config/tcl.m4 gdb-9.1/config/tcl.m4
+--- gdb-9.1-orig/config/tcl.m4	2018-03-02 20:07:33.000000000 +0300
++++ gdb-9.1/config/tcl.m4	2020-04-19 11:28:08.652170400 +0300
+@@ -33,7 +33,7 @@
+ 
+ 	    # First check to see if --with-tcl was specified.
+ 	    case "${host}" in
+-		*-*-cygwin*) platDir="win" ;;
++		*-*-cygwin* | *-*-msys*) platDir="win" ;;
+ 		*) platDir="unix" ;;
+ 	    esac
+ 	    if test x"${with_tclconfig}" != x ; then
+@@ -165,7 +165,7 @@
+ 
+ 	    # then check for a private Tk library
+ 	    case "${host}" in
+-		*-*-cygwin*) platDir="win" ;;
++		*-*-cygwin* | *-*-msys*) platDir="win" ;;
+ 		*) platDir="unix" ;;
+ 	    esac
+ 	    if test x"${ac_cv_c_tkconfig}" = x ; then
+diff -Naur gdb-9.1-orig/config.guess gdb-9.1/config.guess
+--- gdb-9.1-orig/config.guess	2020-02-08 15:50:13.000000000 +0300
++++ gdb-9.1/config.guess	2020-04-19 11:48:20.891646400 +0300
+@@ -896,6 +896,9 @@
+     amd64:CYGWIN*:*:* | x86_64:CYGWIN*:*:*)
+ 	echo x86_64-pc-cygwin
+ 	exit ;;
++    amd64:MSYS*:*:* | x86_64:MSYS*:*:*)
++	echo x86_64-pc-msys
++	exit ;;
+     prep*:SunOS:5.*:*)
+ 	echo powerpcle-unknown-solaris2"`echo "$UNAME_RELEASE"|sed -e 's/[^.]*//'`"
+ 	exit ;;
+diff -Naur gdb-9.1-orig/config.rpath gdb-9.1/config.rpath
+--- gdb-9.1-orig/config.rpath	2013-12-22 14:09:55.000000000 +0400
++++ gdb-9.1/config.rpath	2020-04-19 11:28:09.189708000 +0300
+@@ -109,7 +109,7 @@
+ hardcode_minus_L=no
+ 
+ case "$host_os" in
+-  cygwin* | mingw* | pw32*)
++  cygwin* | msys* | mingw* | pw32*)
+     # FIXME: the MSVC++ port hasn't been tested in a loooong time
+     # When not using gcc, we currently assume that we are using
+     # Microsoft Visual C++.
+@@ -149,7 +149,7 @@
+         ld_shlibs=no
+       fi
+       ;;
+-    cygwin* | mingw* | pw32*)
++    cygwin* | msys* | mingw* | pw32*)
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+       # no search path for DLLs.
+       hardcode_libdir_flag_spec='-L$libdir'
+@@ -268,7 +268,7 @@
+       ;;
+     bsdi4*)
+       ;;
+-    cygwin* | mingw* | pw32*)
++    cygwin* | msys* | mingw* | pw32*)
+       # When not using gcc, we currently assume that we are using
+       # Microsoft Visual C++.
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+@@ -437,7 +437,7 @@
+     ;;
+   bsdi4*)
+     ;;
+-  cygwin* | mingw* | pw32*)
++  cygwin* | msys* | mingw* | pw32*)
+     shrext=.dll
+     ;;
+   darwin* | rhapsody*)
+diff -Naur gdb-9.1-orig/configure gdb-9.1/configure
+--- gdb-9.1-orig/configure	2020-02-08 15:50:13.000000000 +0300
++++ gdb-9.1/configure	2020-04-19 11:28:09.390163900 +0300
+@@ -3099,7 +3099,7 @@
+ # Configure extra directories which are host specific
+ 
+ case "${host}" in
+-  *-cygwin*)
++  *-cygwin* | *-msys*)
+     configdirs="$configdirs libtermcap" ;;
+ esac
+ 
+@@ -3500,7 +3500,7 @@
+ # Disable the go frontend on systems where it is known to not work. Please keep
+ # this in sync with contrib/config-list.mk.
+ case "${target}" in
+-*-*-darwin* | *-*-cygwin* | *-*-mingw*)
++*-*-darwin* | *-*-cygwin* | *-*-msys* | *-*-mingw*)
+     unsupported_languages="$unsupported_languages go"
+     ;;
+ esac
+@@ -3513,7 +3513,7 @@
+ 	# PR 46986
+ 	noconfigdirs="$noconfigdirs target-libgo"
+ 	;;
+-    *-*-cygwin* | *-*-mingw*)
++    *-*-cygwin* | *-*-mingw* | *-*-msys*)
+ 	noconfigdirs="$noconfigdirs target-libgo"
+ 	;;
+     esac
+@@ -3781,7 +3781,7 @@
+   i[3456789]86-*-mingw*)
+     target_configdirs="$target_configdirs target-winsup"
+     ;;
+-  *-*-cygwin*)
++  *-*-cygwin* | *-*-msys*)
+     target_configdirs="$target_configdirs target-libtermcap target-winsup"
+     noconfigdirs="$noconfigdirs target-libgloss"
+     # always build newlib if winsup directory is present.
+@@ -3926,7 +3926,7 @@
+   i[3456789]86-*-msdosdjgpp*)
+     host_makefile_frag="config/mh-djgpp"
+     ;;
+-  *-cygwin*)
++  *-cygwin* | *-msys*)
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking to see if cat works as expected" >&5
+ $as_echo_n "checking to see if cat works as expected... " >&6; }
+@@ -6086,7 +6086,7 @@
+ 
+ target_elf=no
+ case $target in
+-  *-darwin* | *-aix* | *-cygwin* | *-mingw* | *-aout* | *-*coff* | \
++  *-darwin* | *-aix* | *-cygwin* | *-msys* | *-mingw* | *-aout* | *-*coff* | \
+   *-msdosdjgpp* | *-vms* | *-wince* | *-*-pe* | \
+   alpha*-dec-osf* | *-interix* | hppa[12]*-*-hpux* | \
+   nvptx-*-none)
+@@ -6104,7 +6104,7 @@
+ else
+   if test x"$default_enable_lto" = x"yes" ; then
+     case $target in
+-      *-apple-darwin[912]* | *-cygwin* | *-mingw* | *djgpp*) ;;
++      *-apple-darwin[912]* | *-cygwin* | *-msys* | *-mingw* | *djgpp*) ;;
+       # On other non-ELF platforms, LTO has yet to be validated.
+       *) enable_lto=no ;;
+     esac
+@@ -6115,7 +6115,7 @@
+   # warn during gcc/ subconfigure; unless you're bootstrapping with
+   # -flto it won't be needed until after installation anyway.
+     case $target in
+-      *-cygwin* | *-mingw* | *-apple-darwin* | *djgpp*) ;;
++      *-cygwin* | *-msys* | *-mingw* | *-apple-darwin* | *djgpp*) ;;
+       *) if test x"$enable_lto" = x"yes"; then
+ 	as_fn_error $? "LTO support is not enabled for this target." "$LINENO" 5
+         fi
+@@ -6125,7 +6125,7 @@
+   # Among non-ELF, only Windows platforms support the lto-plugin so far.
+   # Build it unless LTO was explicitly disabled.
+   case $target in
+-    *-cygwin* | *-mingw*) build_lto_plugin=$enable_lto ;;
++    *-cygwin* | *-msys* | *-mingw*) build_lto_plugin=$enable_lto ;;
+     *) ;;
+   esac
+ 
+@@ -7089,7 +7089,7 @@
+ case "${host}" in
+   *-*-hpux*) RPATH_ENVVAR=SHLIB_PATH ;;
+   *-*-darwin*) RPATH_ENVVAR=DYLD_LIBRARY_PATH ;;
+-  *-*-mingw* | *-*-cygwin ) RPATH_ENVVAR=PATH ;;
++  *-*-mingw* | *-*-cygwin | *-*-msys ) RPATH_ENVVAR=PATH ;;
+   *) RPATH_ENVVAR=LD_LIBRARY_PATH ;;
+ esac
+ 
+@@ -7610,7 +7610,7 @@
+   case " $target_configargs " in
+   *" --with-newlib "*)
+    case "$target" in
+-    *-cygwin*)
++    *-cygwin* | *-msys*)
+       FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -L$$r/$(TARGET_SUBDIR)/winsup/cygwin -isystem $$s/winsup/cygwin/include'
+       ;;
+    esac
+diff -Naur gdb-9.1-orig/configure.ac gdb-9.1/configure.ac
+--- gdb-9.1-orig/configure.ac	2020-02-08 15:54:22.000000000 +0300
++++ gdb-9.1/configure.ac	2020-04-19 11:28:09.751211900 +0300
+@@ -424,7 +424,7 @@
+ # Configure extra directories which are host specific
+ 
+ case "${host}" in
+-  *-cygwin*)
++  *-cygwin* | *-msys*)
+     configdirs="$configdirs libtermcap" ;;
+ esac
+ 
+@@ -793,7 +793,7 @@
+ # Disable the go frontend on systems where it is known to not work. Please keep
+ # this in sync with contrib/config-list.mk.
+ case "${target}" in
+-*-*-darwin* | *-*-cygwin* | *-*-mingw*)
++*-*-darwin* | *-*-cygwin* | *-*-msys* | *-*-mingw*)
+     unsupported_languages="$unsupported_languages go"
+     ;;
+ esac
+@@ -806,7 +806,7 @@
+ 	# PR 46986
+ 	noconfigdirs="$noconfigdirs target-libgo"
+ 	;;
+-    *-*-cygwin* | *-*-mingw*)
++    *-*-cygwin* | *-*-msys* | *-*-mingw*)
+ 	noconfigdirs="$noconfigdirs target-libgo"
+ 	;;
+     esac
+@@ -1074,7 +1074,7 @@
+   i[[3456789]]86-*-mingw*)
+     target_configdirs="$target_configdirs target-winsup"
+     ;;
+-  *-*-cygwin*)
++  *-*-cygwin* | *-*-msys*)
+     target_configdirs="$target_configdirs target-libtermcap target-winsup"
+     noconfigdirs="$noconfigdirs target-libgloss"
+     # always build newlib if winsup directory is present.
+@@ -1219,7 +1219,7 @@
+   i[[3456789]]86-*-msdosdjgpp*)
+     host_makefile_frag="config/mh-djgpp"
+     ;;
+-  *-cygwin*)
++  *-cygwin* | *-msys*)
+     ACX_CHECK_CYGWIN_CAT_WORKS
+     host_makefile_frag="config/mh-cygwin"
+     ;;
+@@ -1723,7 +1723,7 @@
+   build_lto_plugin=yes
+ ],[if test x"$default_enable_lto" = x"yes" ; then
+     case $target in
+-      *-apple-darwin[[912]]* | *-cygwin* | *-mingw* | *djgpp*) ;;
++      *-apple-darwin[[912]]* | *-cygwin* | *-msys* | *-mingw* | *djgpp*) ;;
+       # On other non-ELF platforms, LTO has yet to be validated.
+       *) enable_lto=no ;;
+     esac
+@@ -1734,7 +1734,7 @@
+   # warn during gcc/ subconfigure; unless you're bootstrapping with
+   # -flto it won't be needed until after installation anyway.
+     case $target in
+-      *-cygwin* | *-mingw* | *-apple-darwin* | *djgpp*) ;;
++      *-cygwin* | *-msys* | *-mingw* | *-apple-darwin* | *djgpp*) ;;
+       *) if test x"$enable_lto" = x"yes"; then
+ 	AC_MSG_ERROR([LTO support is not enabled for this target.])
+         fi
+@@ -1744,7 +1744,7 @@
+   # Among non-ELF, only Windows platforms support the lto-plugin so far.
+   # Build it unless LTO was explicitly disabled.
+   case $target in
+-    *-cygwin* | *-mingw*) build_lto_plugin=$enable_lto ;;
++    *-cygwin* | *-msys* | *-mingw*) build_lto_plugin=$enable_lto ;;
+     *) ;;
+   esac
+ ])
+@@ -2617,7 +2617,7 @@
+ case "${host}" in
+   *-*-hpux*) RPATH_ENVVAR=SHLIB_PATH ;;
+   *-*-darwin*) RPATH_ENVVAR=DYLD_LIBRARY_PATH ;;
+-  *-*-mingw* | *-*-cygwin ) RPATH_ENVVAR=PATH ;;
++  *-*-mingw* | *-*-cygwin | *-*-msys ) RPATH_ENVVAR=PATH ;;
+   *) RPATH_ENVVAR=LD_LIBRARY_PATH ;;
+ esac
+ 
+@@ -3133,7 +3133,7 @@
+   case " $target_configargs " in
+   *" --with-newlib "*)
+    case "$target" in
+-    *-cygwin*)
++    *-cygwin* | *-msys*)
+       FLAGS_FOR_TARGET=$FLAGS_FOR_TARGET' -L$$r/$(TARGET_SUBDIR)/winsup/cygwin -isystem $$s/winsup/cygwin/include'
+       ;;
+    esac
+diff -Naur gdb-9.1-orig/gdb/configure gdb-9.1/gdb/configure
+--- gdb-9.1-orig/gdb/configure	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gdb/configure	2020-04-19 11:42:21.974547600 +0300
+@@ -8954,7 +8954,7 @@
+ # have a separate termcap library, or no curses library at all.
+ 
+ case $host_os in
+-  cygwin*)
++  cygwin* | msys*)
+     if test -d "$srcdir/libtermcap"; then
+       LIBS="../libtermcap/libtermcap.a $LIBS"
+       ac_cv_search_tgetent="../libtermcap/libtermcap.a"
+@@ -16349,7 +16349,7 @@
+ if test x"$gdb_cv_os_cygwin" = xyes; then
+     WIN32LIBS="-luser32"
+     case "${target}" in
+-	*cygwin*) WIN32LIBS="$WIN32LIBS -limagehlp"
++	*cygwin* | *msys*) WIN32LIBS="$WIN32LIBS -limagehlp"
+ 	;;
+     esac
+ fi
+@@ -17026,7 +17026,7 @@
+ 
+ 
+ case "${host}" in
+-*-*-cygwin* | *-*-mingw* )
++*-*-cygwin* | *-*-msys* | *-*-mingw* )
+     configdir="win"
+     ;;
+ *)
+@@ -17069,7 +17069,7 @@
+ 
+ 	    # First check to see if --with-tcl was specified.
+ 	    case "${host}" in
+-		*-*-cygwin*) platDir="win" ;;
++		*-*-cygwin* | *-*-msys*) platDir="win" ;;
+ 		*) platDir="unix" ;;
+ 	    esac
+ 	    if test x"${with_tclconfig}" != x ; then
+@@ -17198,7 +17198,7 @@
+ 
+ 	    # then check for a private Tk library
+ 	    case "${host}" in
+-		*-*-cygwin*) platDir="win" ;;
++		*-*-cygwin* | *-*-msys*) platDir="win" ;;
+ 		*) platDir="unix" ;;
+ 	    esac
+ 	    if test x"${ac_cv_c_tkconfig}" = x ; then
+diff -Naur gdb-9.1-orig/gdb/configure.ac gdb-9.1/gdb/configure.ac
+--- gdb-9.1-orig/gdb/configure.ac	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gdb/configure.ac	2020-04-19 11:41:59.452511300 +0300
+@@ -555,7 +555,7 @@
+ # have a separate termcap library, or no curses library at all.
+ 
+ case $host_os in
+-  cygwin*)
++  cygwin* | msys*)
+     if test -d "$srcdir/libtermcap"; then
+       LIBS="../libtermcap/libtermcap.a $LIBS"
+       ac_cv_search_tgetent="../libtermcap/libtermcap.a"
+@@ -1821,7 +1821,7 @@
+ if test x"$gdb_cv_os_cygwin" = xyes; then
+     WIN32LIBS="-luser32"
+     case "${target}" in
+-	*cygwin*) WIN32LIBS="$WIN32LIBS -limagehlp"
++	*cygwin* | *msys*) WIN32LIBS="$WIN32LIBS -limagehlp"
+ 	;;
+     esac
+ fi
+@@ -1893,7 +1893,7 @@
+ AC_SUBST(WIN32LDAPP)
+ 
+ case "${host}" in
+-*-*-cygwin* | *-*-mingw* )
++*-*-cygwin* | *-*-msys* | *-*-mingw* )
+     configdir="win"
+     ;;
+ *)
+diff -Naur gdb-9.1-orig/gdb/configure.host gdb-9.1/gdb/configure.host
+--- gdb-9.1-orig/gdb/configure.host	2019-11-19 04:10:41.000000000 +0300
++++ gdb-9.1/gdb/configure.host	2020-04-19 11:28:11.197969800 +0300
+@@ -117,6 +117,7 @@
+ i[34567]86-*-solaris2* | x86_64-*-solaris2*)
+ 			gdb_host=sol2 ;;
+ i[34567]86-*-cygwin*)	gdb_host=cygwin ;;
++i[34567]86-*-msys*)	gdb_host=msys ;;
+ 
+ ia64-*-linux*)		gdb_host=linux ;;
+ 
+@@ -182,6 +183,7 @@
+ 			gdb_host_obs=mingw-hdep.o
+ 			;;
+ x86_64-*-cygwin*)	gdb_host=cygwin64 ;;
++x86_64-*-msys*)	gdb_host=msys64 ;;
+ m32r*-*-linux*)          gdb_host=linux ;;
+ 
+ xtensa*-*-linux*)	gdb_host=linux ;;
+diff -Naur gdb-9.1-orig/gdb/configure.nat gdb-9.1/gdb/configure.nat
+--- gdb-9.1-orig/gdb/configure.nat	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gdb/configure.nat	2020-04-19 11:38:00.405588900 +0300
+@@ -77,6 +77,9 @@
+     cygwin*)
+ 	NATDEPFILES='x86-nat.o nat/x86-dregs.o windows-nat.o'
+ 	;;
++    msys*)
++	NATDEPFILES='x86-nat.o nat/x86-dregs.o windows-nat.o'
++	;;
+     mingw*)
+ 	NATDEPFILES='x86-nat.o nat/x86-dregs.o windows-nat.o'
+ 	;;
+@@ -123,7 +126,7 @@
+ 		;;
+ 	esac
+ 	;;
+-    cygwin)
++    cygwin | msys)
+ 	case ${gdb_host_cpu} in
+ 	    i386)
+ 		# Native config information for GDB on i386
+@@ -132,7 +135,7 @@
+ 		;;
+ 	esac
+ 	;;
+-    cygwin64)
++    cygwin64 | msys64)
+ 	case ${gdb_host_cpu} in
+ 	    i386)
+ 		# Native config information for GDB on amd64
+diff -Naur gdb-9.1-orig/gdb/configure.tgt gdb-9.1/gdb/configure.tgt
+--- gdb-9.1-orig/gdb/configure.tgt	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gdb/configure.tgt	2020-04-19 11:51:31.214159600 +0300
+@@ -313,6 +313,11 @@
+ 	gdb_target_obs="i386-cygwin-tdep.o windows-tdep.o"
+ 	build_gdbserver=yes
+ 	;;
++i[34567]86-*-msys*)
++	# Target: Intel 386 running win32
++	gdb_target_obs="i386-cygwin-tdep.o windows-tdep.o"
++	build_gdbserver=yes
++	;;
+ i[34567]86-*-mingw32*)
+ 	# Target: Intel 386 running win32
+ 	gdb_target_obs="i386-cygwin-tdep.o windows-tdep.o"
+@@ -748,7 +753,7 @@
+ 	gdb_target_obs="amd64-fbsd-tdep.o ${i386_tobjs} \
+ 			i386-bsd-tdep.o i386-fbsd-tdep.o"
+ 	;;
+-x86_64-*-mingw* | x86_64-*-cygwin*)
++x86_64-*-mingw* | x86_64-*-cygwin* | x86_64-*-msys*)
+         # Target: MingW/amd64
+ 	gdb_target_obs="amd64-windows-tdep.o \
+                         ${i386_tobjs} i386-cygwin-tdep.o \
+@@ -794,7 +799,7 @@
+ *-*-*-gnu*)	;; # prevent non-GNU kernels to match the Hurd rule below
+ *-*-gnu*)	gdb_osabi=GDB_OSABI_HURD ;;
+ *-*-mingw32ce*)	gdb_osabi=GDB_OSABI_WINCE ;;
+-*-*-mingw* | *-*-cygwin*)
++*-*-mingw* | *-*-cygwin* | *-*-msys*)
+ 		gdb_osabi=GDB_OSABI_CYGWIN ;;
+ *-*-dicos*)	gdb_osabi=GDB_OSABI_DICOS ;;
+ *-*-symbianelf*)
+diff -Naur gdb-9.1-orig/gdb/defs.h gdb-9.1/gdb/defs.h
+--- gdb-9.1-orig/gdb/defs.h	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gdb/defs.h	2020-04-19 11:28:18.677804400 +0300
+@@ -487,6 +487,7 @@
+   GDB_OSABI_GO32,
+   GDB_OSABI_QNXNTO,
+   GDB_OSABI_CYGWIN,
++  GDB_OSABI_MSYS,
+   GDB_OSABI_AIX,
+   GDB_OSABI_DICOS,
+   GDB_OSABI_DARWIN,
+diff -Naur gdb-9.1-orig/gdb/gdbserver/configure.srv gdb-9.1/gdb/gdbserver/configure.srv
+--- gdb-9.1-orig/gdb/gdbserver/configure.srv	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gdb/gdbserver/configure.srv	2020-04-19 11:28:12.456291500 +0300
+@@ -85,7 +85,7 @@
+ 			srv_linux_usrregs=yes
+ 			srv_linux_thread_db=yes
+ 			;;
+-  i[34567]86-*-cygwin*)	srv_regobj=""
++  i[34567]86-*-cygwin*|i[34567]86-*-msys*)	srv_regobj=""
+ 			srv_tgtobj="x86-low.o x86-dregs.o win32-low.o win32-i386-low.o"
+ 			srv_tgtobj="${srv_tgtobj} arch/i386.o"
+ 			;;
+@@ -368,7 +368,7 @@
+ 			srv_tgtobj="${srv_tgtobj} arch/amd64.o"
+ 			srv_mingw=yes
+ 			;;
+-  x86_64-*-cygwin*)	srv_regobj=""
++  x86_64-*-cygwin*|x86_64-*-msys*)	srv_regobj=""
+ 			srv_tgtobj="x86-low.o x86-dregs.o i387-fp.o win32-low.o win32-i386-low.o"
+ 			srv_tgtobj="${srv_tgtobj} arch/amd64.o"
+ 			;;
+diff -Naur gdb-9.1-orig/gdb/osabi.c gdb-9.1/gdb/osabi.c
+--- gdb-9.1-orig/gdb/osabi.c	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gdb/osabi.c	2020-04-19 11:28:15.193194600 +0300
+@@ -72,6 +72,7 @@
+   { "DJGPP", NULL },
+   { "QNX-Neutrino", NULL },
+   { "Cygwin", NULL },
++  { "MSYS", NULL },
+   { "AIX", NULL },
+   { "DICOS", NULL },
+   { "Darwin", NULL },
+diff -Naur gdb-9.1-orig/gdb/testsuite/gdb.base/bigcore.exp gdb-9.1/gdb/testsuite/gdb.base/bigcore.exp
+--- gdb-9.1-orig/gdb/testsuite/gdb.base/bigcore.exp	2020-02-08 15:49:30.000000000 +0300
++++ gdb-9.1/gdb/testsuite/gdb.base/bigcore.exp	2020-04-19 11:28:12.829166900 +0300
+@@ -33,7 +33,8 @@
+ if { [istarget "*-*-*bsd*"]
+      || [istarget "*-*-solaris*"] 
+      || [istarget "*-*-darwin*"] 
+-     || [istarget "*-*-cygwin*"] } {
++     || [istarget "*-*-cygwin*"] 
++     || [istarget "*-*-msys*"] } {
+     untested "kernel lacks sparse corefile support (PR gdb/1551)"
+     return
+ }
+diff -Naur gdb-9.1-orig/gdb/testsuite/gdb.base/fileio.exp gdb-9.1/gdb/testsuite/gdb.base/fileio.exp
+--- gdb-9.1-orig/gdb/testsuite/gdb.base/fileio.exp	2020-02-08 15:49:30.000000000 +0300
++++ gdb-9.1/gdb/testsuite/gdb.base/fileio.exp	2020-04-19 11:28:13.201154800 +0300
+@@ -253,7 +253,7 @@
+ 
+ # This test fails on Cygwin because unlink() succeeds on Win32 systems
+ # in that situation.
+-if [ishost *cygwin*] {
++if { ([ishost *cygwin*] || [ishost *msys*]) } {
+     setup_xfail "*-*-*"
+ }
+ gdb_test continue \
+diff -Naur gdb-9.1-orig/gdb/testsuite/gdb.base/maint.exp gdb-9.1/gdb/testsuite/gdb.base/maint.exp
+--- gdb-9.1-orig/gdb/testsuite/gdb.base/maint.exp	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gdb/testsuite/gdb.base/maint.exp	2020-04-19 11:28:13.571296300 +0300
+@@ -193,7 +193,7 @@
+ # The timeout value is raised, because printing all the symbols and
+ # statistical information about Cygwin and Windows libraries takes a lot
+ # of time.
+-if [istarget "*-*-cygwin*"] {
++if { ([istarget "*-*-cygwin*"] || [istarget "*-*-msys*"]) } {
+ 	set oldtimeout $timeout
+ 	set timeout [expr $timeout + 500]
+ }
+@@ -474,6 +474,7 @@
+ # The "maint info sections DATA" test is marked for XFAIL on Windows,
+ # because Windows has text sections marked DATA.
+ setup_xfail "*-*-*cygwin*"
++setup_xfail "*-*-*msys*"
+ setup_xfail "*-*-*mingw*"
+ 
+ gdb_test_multiple "maint info sections DATA" "maint info sections DATA" {
+diff -Naur gdb-9.1-orig/gdb/testsuite/gdb.base/shreloc.exp gdb-9.1/gdb/testsuite/gdb.base/shreloc.exp
+--- gdb-9.1-orig/gdb/testsuite/gdb.base/shreloc.exp	2020-02-08 15:49:30.000000000 +0300
++++ gdb-9.1/gdb/testsuite/gdb.base/shreloc.exp	2020-04-19 11:28:13.936346400 +0300
+@@ -44,7 +44,7 @@
+ set lib_opts "debug"
+ set exec_opts [list debug shlib=$lib1_sl shlib=$lib2_sl]
+ 
+-if {([istarget "*pc-cygwin"] || [istarget "*pc-mingw32"]) } {
++if {([istarget "*pc-cygwin"] || [istarget "*pc-mingw32"] || [istarget "*pc-msys"]) } {
+     lappend lib_opts "ldflags=-Wl,--image-base,0x04000000"
+ }
+ 
+@@ -226,7 +226,7 @@
+     }
+ }
+ 
+-if {([istarget "*pc-cygwin"] || [istarget "*pc-mingw32"]) } {
++if {([istarget "*pc-cygwin"] || [istarget "*pc-mingw32"] || [istarget "*pc-msys"]) } {
+     #
+     # We know the names of some absolute symbols included in the
+     # portable-executable (DLL) format. Check that they didn't get
+diff -Naur gdb-9.1-orig/gdb/testsuite/gdb.base/solib-weak.exp gdb-9.1/gdb/testsuite/gdb.base/solib-weak.exp
+--- gdb-9.1-orig/gdb/testsuite/gdb.base/solib-weak.exp	2020-02-08 15:49:30.000000000 +0300
++++ gdb-9.1/gdb/testsuite/gdb.base/solib-weak.exp	2020-04-19 11:28:14.287378200 +0300
+@@ -25,7 +25,8 @@
+ if {([istarget arm*-*-symbianelf*]
+      || [istarget *-*-mingw*]
+      || [istarget *-*-cygwin*]
+-     || [istarget *-*-pe*])} {
++     || [istarget *-*-pe*]
++     || [istarget *-*-msys*]) } {
+     return 0
+ }
+ 
+diff -Naur gdb-9.1-orig/gdb/testsuite/gdb.dwarf2/dw2-dos-drive.exp gdb-9.1/gdb/testsuite/gdb.dwarf2/dw2-dos-drive.exp
+--- gdb-9.1-orig/gdb/testsuite/gdb.dwarf2/dw2-dos-drive.exp	2020-02-08 15:49:30.000000000 +0300
++++ gdb-9.1/gdb/testsuite/gdb.dwarf2/dw2-dos-drive.exp	2020-04-19 11:28:14.461903500 +0300
+@@ -32,7 +32,8 @@
+ gdb_test "break 'z:file.c':func" {Breakpoint [0-9]+ at .*}
+ 
+ set dos [expr [istarget "*-*-cygwin*"] || [istarget "i?86-*-mingw*"] \
+-	      || [istarget "*-*-msdosdjgpp*"] || [istarget "*-*-go32*"] ]
++	      || [istarget "*-*-msdosdjgpp*"] || [istarget "*-*-go32*"] \
++	      || [istarget "*-*-msys*"] ]
+ 
+ if { $dos } {
+     gdb_test "break file.c:func" {Breakpoint [0-9]+ at .*}
+diff -Naur gdb-9.1-orig/gdb/testsuite/gdb.server/wrapper.exp gdb-9.1/gdb/testsuite/gdb.server/wrapper.exp
+--- gdb-9.1-orig/gdb/testsuite/gdb.server/wrapper.exp	2020-02-08 15:49:30.000000000 +0300
++++ gdb-9.1/gdb/testsuite/gdb.server/wrapper.exp	2020-04-19 11:28:14.642385000 +0300
+@@ -26,7 +26,8 @@
+ }
+ 
+ if { [istarget *-*-mingw*]
+-     || [istarget *-*-cygwin*] } {
++     || [istarget *-*-cygwin*]
++     || [istarget *-*-msys*] } {
+     unsupported "gdbserver does not support --wrapper on this target (PR server/15967)"
+     return -1
+ }
+diff -Naur gdb-9.1-orig/gdb/testsuite/lib/gdb.exp gdb-9.1/gdb/testsuite/lib/gdb.exp
+--- gdb-9.1-orig/gdb/testsuite/lib/gdb.exp	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gdb/testsuite/lib/gdb.exp	2020-04-19 11:54:45.662045400 +0300
+@@ -2044,7 +2044,8 @@
+ 	 || [istarget arm*-*-symbianelf*]
+ 	 || [istarget *-*-mingw*]
+ 	 || [istarget *-*-cygwin*]
+-	 || [istarget *-*-pe*])} {
++	 || [istarget *-*-pe*]
++	 || [istarget *-*-msys*])} {
+ 	return 0
+     }
+ 
+@@ -3741,7 +3742,8 @@
+ 		lappend source "-Wl,$shlib_name"
+ 	    } elseif { ([istarget "*-*-mingw*"]
+ 			|| [istarget *-*-cygwin*]
+-			|| [istarget *-*-pe*])} {
++			|| [istarget *-*-pe*]
++			|| [istarget *-*-msys*])} {
+ 		lappend source "${shlib_name}.a"
+             } else {
+                lappend source $shlib_name
+@@ -3749,7 +3751,8 @@
+             if { $shlib_found == 0 } {
+                 set shlib_found 1
+ 		if { ([istarget "*-*-mingw*"]
+-		      || [istarget *-*-cygwin*]) } {
++		      || [istarget *-*-cygwin*]
++		      || [istarget *-*-msys*]) } {
+ 		    lappend new_options "additional_flags=-Wl,--enable-auto-import"
+ 		}
+ 		if { [test_compiler_info "gcc-*"] || [test_compiler_info "clang-*"] } {
+@@ -3789,6 +3792,7 @@
+     if { $shlib_load || $shlib_found } {
+ 	if { ([istarget "*-*-mingw*"]
+ 	      || [istarget *-*-cygwin*]
++	      || [istarget *-*-msys*]
+ 	      || [istarget *-*-pe*]) } {
+ 	    # Do not need anything.
+ 	} elseif { [istarget *-*-freebsd*] || [istarget *-*-openbsd*] } {
+@@ -3873,7 +3877,8 @@
+     if { $type == "executable" } {
+ 	if { ([istarget "*-*-mingw*"]
+ 	      || [istarget "*-*-*djgpp"]
+-	      || [istarget "*-*-cygwin*"])} {
++	      || [istarget "*-*-cygwin*"]
++	      || [istarget "*-*-msys*"])} {
+ 	    # Force output to unbuffered mode, by linking in an object file
+ 	    # with a global contructor that calls setvbuf.
+ 	    #
+@@ -4004,6 +4009,7 @@
+         }
+ 	"clang-*" {
+ 	    if { !([istarget "*-*-cygwin*"]
++		   || [istarget *-*-msys*]
+ 		   || [istarget "*-*-mingw*"]) } {
+ 		lappend obj_options "additional_flags=-fpic"
+ 	    }
+@@ -4012,6 +4018,7 @@
+             if { !([istarget "powerpc*-*-aix*"]
+                    || [istarget "rs6000*-*-aix*"]
+                    || [istarget "*-*-cygwin*"]
++                   || [istarget "*-*-msys*"]
+                    || [istarget "*-*-mingw*"]
+                    || [istarget "*-*-pe*"]) } {
+                 lappend obj_options "additional_flags=-fpic"
+@@ -4048,6 +4055,7 @@
+ 
+ 	if { ([istarget "*-*-mingw*"]
+ 	      || [istarget *-*-cygwin*]
++	      || [istarget *-*-msys*]
+ 	      || [istarget *-*-pe*]) } {
+ 	    if { [is_remote host] } {
+ 		set name [file tail ${dest}]
+@@ -4075,6 +4083,7 @@
+     if { [is_remote host]
+ 	 && ([istarget "*-*-mingw*"]
+ 	     || [istarget *-*-cygwin*]
++	     || [istarget *-*-msys*]
+ 	     || [istarget *-*-pe*]) } {
+ 	set dest_tail_name [file tail ${dest}]
+ 	remote_upload host $dest_tail_name.a ${dest}.a
+@@ -4467,7 +4476,7 @@
+ proc spawn_id_get_pid { spawn_id } {
+     set testpid [exp_pid -i $spawn_id]
+ 
+-    if { [istarget "*-*-cygwin*"] } {
++    if { ([istarget "*-*-cygwin*"] || [istarget *-*-msys*]) } {
+ 	# testpid is the Cygwin PID, GDB uses the Windows PID, which
+ 	# might be different due to the way fork/exec works.
+ 	set testpid [ exec ps -e | gawk "{ if (\$1 == $testpid) print \$4; }" ]
+@@ -5639,6 +5648,7 @@
+ 	  || [istarget *-*-aix*]
+ 	  || [istarget *-*-gnu*]
+ 	  || [istarget *-*-cygwin*] || [istarget *-*-mingw32*]
++	  || [istarget *-*-msys*]
+ 	  || [istarget *-*-*djgpp*] || [istarget *-*-go32*]
+ 	  || [istarget *-wince-pe] || [istarget *-*-mingw32ce*]
+ 	  || [istarget *-*-symbianelf*]
+@@ -5674,7 +5684,7 @@
+ 
+ proc get_build_id { filename } {
+     if { ([istarget "*-*-mingw*"]
+-	  || [istarget *-*-cygwin*]) } {
++	  || [istarget *-*-cygwin*] || [istarget *-*-msys*]) } {
+ 	set objdump_program [gdb_find_objdump]
+ 	set result [catch {set data [exec $objdump_program -p $filename | grep signature | cut "-d " -f4]} output]
+ 	verbose "result is $result"
+diff -Naur gdb-9.1-orig/gdb/windows-nat.c gdb-9.1/gdb/windows-nat.c
+--- gdb-9.1-orig/gdb/windows-nat.c	2020-04-19 11:35:51.657394300 +0300
++++ gdb-9.1/gdb/windows-nat.c	2020-04-19 11:28:15.384639900 +0300
+@@ -766,9 +766,15 @@
+ 	  strcpy (so->so_name, so->so_original_name);
+ 	}
+     }
++#ifdef __MSYS__
++  /* Record msys-2.0.dll .text start/end.  */
++  p = strchr (so->so_name, '\0') - (sizeof ("/msys-2.0.dll") - 1);
++  if (p >= so->so_name && strcasecmp (p, "/msys-2.0.dll") == 0)
++#else
+   /* Record cygwin1.dll .text start/end.  */
+   p = strchr (so->so_name, '\0') - (sizeof ("/cygwin1.dll") - 1);
+   if (p >= so->so_name && strcasecmp (p, "/cygwin1.dll") == 0)
++#endif
+     {
+       asection *text = NULL;
+ 
+diff -Naur gdb-9.1-orig/gnulib/configure gdb-9.1/gnulib/configure
+--- gdb-9.1-orig/gnulib/configure	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/configure	2020-04-19 11:56:57.827667500 +0300
+@@ -5805,7 +5805,7 @@
+      else
+        case "$host_os" in
+                                                                osf*) gl_use_threads=no ;;
+-         cygwin*)
++         cygwin*|msys*)
+                case `uname -r` in
+                  1.[0-5].*) gl_use_threads=no ;;
+                  *)         gl_use_threads=yes ;;
+@@ -7536,7 +7536,7 @@
+         # special semantics and is distinct from /, please report it to
+         # <bug-gnulib@gnu.org>.
+         case $host in
+-          *-cygwin | i370-ibm-openedition)
++          *-cygwin | *-msys | i370-ibm-openedition)
+             gl_cv_double_slash_root=yes ;;
+           *)
+             # Be optimistic and assume that / and // are the same when we
+@@ -9469,7 +9469,7 @@
+                      # Guess yes on glibc systems.
+             *-gnu*)  gl_cv_func_getcwd_null="guessing yes";;
+                      # Guess yes on Cygwin.
+-            cygwin*) gl_cv_func_getcwd_null="guessing yes";;
++            cygwin* | msys*) gl_cv_func_getcwd_null="guessing yes";;
+                      # If we don't know, assume the worst.
+             *)       gl_cv_func_getcwd_null="guessing no";;
+           esac
+@@ -17225,7 +17225,7 @@
+         # special semantics and is distinct from /, please report it to
+         # <bug-gnulib@gnu.org>.
+         case $host in
+-          *-cygwin | i370-ibm-openedition)
++          *-cygwin | *-msys | i370-ibm-openedition)
+             gl_cv_double_slash_root=yes ;;
+           *)
+             # Be optimistic and assume that / and // are the same when we
+@@ -17364,7 +17364,7 @@
+   case "$host_os" in
+            mingw*) # on this platform, dup2 always returns 0 for success
+              gl_cv_func_dup2_works="guessing no" ;;
+-           cygwin*) # on cygwin 1.5.x, dup2(1,1) returns 0
++           cygwin* | msys*) # on cygwin 1.5.x, dup2(1,1) returns 0
+              gl_cv_func_dup2_works="guessing no" ;;
+            aix* | freebsd*)
+                    # on AIX 7.1 and FreeBSD 6.1, dup2 (1,toobig) gives EMFILE,
+@@ -17715,7 +17715,7 @@
+ else
+   if test "$cross_compiling" = yes; then :
+   case $host_os in
+-            aix* | cygwin* | haiku*)
++            aix* | cygwin* | msys* | haiku*)
+                gl_cv_func_fcntl_f_dupfd_works="guessing no" ;;
+             *) gl_cv_func_fcntl_f_dupfd_works="guessing yes" ;;
+           esac
+@@ -19939,7 +19939,7 @@
+ else
+   if test "$cross_compiling" = yes; then :
+   case "$host_os" in
+-          cygwin*) # on cygwin 1.5.25, getdtablesize() automatically grows
++          cygwin* | msys*) # on cygwin 1.5.25, getdtablesize() automatically grows
+             gl_cv_func_getdtablesize_works="guessing no" ;;
+           *) gl_cv_func_getdtablesize_works="guessing yes" ;;
+          esac
+diff -Naur gdb-9.1-orig/gnulib/import/extra/config.rpath gdb-9.1/gnulib/import/extra/config.rpath
+--- gdb-9.1-orig/gnulib/import/extra/config.rpath	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/extra/config.rpath	2020-04-19 11:57:56.182652900 +0300
+@@ -57,7 +57,7 @@
+     aix*)
+       wl='-Wl,'
+       ;;
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       ;;
+     hpux9* | hpux10* | hpux11*)
+       wl='-Wl,'
+@@ -149,7 +149,7 @@
+ hardcode_minus_L=no
+ 
+ case "$host_os" in
+-  cygwin* | mingw* | pw32* | cegcc*)
++  cygwin* | msys* | mingw* | pw32* | cegcc*)
+     # FIXME: the MSVC++ port hasn't been tested in a loooong time
+     # When not using gcc, we currently assume that we are using
+     # Microsoft Visual C++.
+@@ -198,7 +198,7 @@
+         ld_shlibs=no
+       fi
+       ;;
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+       # no search path for DLLs.
+       hardcode_libdir_flag_spec='-L$libdir'
+@@ -348,7 +348,7 @@
+       ;;
+     bsdi[45]*)
+       ;;
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # When not using gcc, we currently assume that we are using
+       # Microsoft Visual C++.
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+@@ -533,7 +533,7 @@
+   bsdi[45]*)
+     library_names_spec='$libname$shrext'
+     ;;
+-  cygwin* | mingw* | pw32* | cegcc*)
++  cygwin* | msys* | mingw* | pw32* | cegcc*)
+     shrext=.dll
+     library_names_spec='$libname.dll.a $libname.lib'
+     ;;
+diff -Naur gdb-9.1-orig/gnulib/import/m4/double-slash-root.m4 gdb-9.1/gnulib/import/m4/double-slash-root.m4
+--- gdb-9.1-orig/gnulib/import/m4/double-slash-root.m4	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/m4/double-slash-root.m4	2020-04-19 11:58:33.450299600 +0300
+@@ -16,7 +16,7 @@
+         # special semantics and is distinct from /, please report it to
+         # <bug-gnulib@gnu.org>.
+         case $host in
+-          *-cygwin | i370-ibm-openedition)
++          *-cygwin | *-msys | i370-ibm-openedition)
+             gl_cv_double_slash_root=yes ;;
+           *)
+             # Be optimistic and assume that / and // are the same when we
+diff -Naur gdb-9.1-orig/gnulib/import/m4/dup2.m4 gdb-9.1/gnulib/import/m4/dup2.m4
+--- gdb-9.1-orig/gnulib/import/m4/dup2.m4	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/m4/dup2.m4	2020-04-19 11:58:51.769985300 +0300
+@@ -78,7 +78,7 @@
+         [case "$host_os" in
+            mingw*) # on this platform, dup2 always returns 0 for success
+              gl_cv_func_dup2_works="guessing no" ;;
+-           cygwin*) # on cygwin 1.5.x, dup2(1,1) returns 0
++           cygwin* | msys*) # on cygwin 1.5.x, dup2(1,1) returns 0
+              gl_cv_func_dup2_works="guessing no" ;;
+            aix* | freebsd*)
+                    # on AIX 7.1 and FreeBSD 6.1, dup2 (1,toobig) gives EMFILE,
+diff -Naur gdb-9.1-orig/gnulib/import/m4/fcntl.m4 gdb-9.1/gnulib/import/m4/fcntl.m4
+--- gdb-9.1-orig/gnulib/import/m4/fcntl.m4	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/m4/fcntl.m4	2020-04-19 11:59:31.612484000 +0300
+@@ -69,7 +69,7 @@
+          [gl_cv_func_fcntl_f_dupfd_works=yes],
+          [gl_cv_func_fcntl_f_dupfd_works=no],
+          [case $host_os in
+-            aix* | cygwin* | haiku*)
++            aix* | cygwin* | msys* | haiku*)
+                gl_cv_func_fcntl_f_dupfd_works="guessing no" ;;
+             *) gl_cv_func_fcntl_f_dupfd_works="guessing yes" ;;
+           esac])])
+diff -Naur gdb-9.1-orig/gnulib/import/m4/getcwd.m4 gdb-9.1/gnulib/import/m4/getcwd.m4
+--- gdb-9.1-orig/gnulib/import/m4/getcwd.m4	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/m4/getcwd.m4	2020-04-19 11:59:51.754804700 +0300
+@@ -51,7 +51,7 @@
+                      # Guess yes on glibc systems.
+             *-gnu*)  gl_cv_func_getcwd_null="guessing yes";;
+                      # Guess yes on Cygwin.
+-            cygwin*) gl_cv_func_getcwd_null="guessing yes";;
++            cygwin* | msys*) gl_cv_func_getcwd_null="guessing yes";;
+                      # If we don't know, assume the worst.
+             *)       gl_cv_func_getcwd_null="guessing no";;
+           esac
+diff -Naur gdb-9.1-orig/gnulib/import/m4/getdtablesize.m4 gdb-9.1/gnulib/import/m4/getdtablesize.m4
+--- gdb-9.1-orig/gnulib/import/m4/getdtablesize.m4	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/m4/getdtablesize.m4	2020-04-19 12:00:16.792089600 +0300
+@@ -28,7 +28,7 @@
+         [gl_cv_func_getdtablesize_works=yes],
+         [gl_cv_func_getdtablesize_works=no],
+         [case "$host_os" in
+-          cygwin*) # on cygwin 1.5.25, getdtablesize() automatically grows
++          cygwin* | msys*) # on cygwin 1.5.25, getdtablesize() automatically grows
+             gl_cv_func_getdtablesize_works="guessing no" ;;
+           *) gl_cv_func_getdtablesize_works="guessing yes" ;;
+          esac])
+diff -Naur gdb-9.1-orig/gnulib/import/m4/malloc.m4 gdb-9.1/gnulib/import/m4/malloc.m4
+--- gdb-9.1-orig/gnulib/import/m4/malloc.m4	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/m4/malloc.m4	2020-04-19 12:00:42.167181800 +0300
+@@ -33,7 +33,7 @@
+        [case "$host_os" in
+           # Guess yes on platforms where we know the result.
+           *-gnu* | freebsd* | netbsd* | openbsd* \
+-          | hpux* | solaris* | cygwin* | mingw*)
++          | hpux* | solaris* | cygwin* | msys* | mingw*)
+             ac_cv_func_malloc_0_nonnull=yes ;;
+           # If we don't know, assume the worst.
+           *) ac_cv_func_malloc_0_nonnull=no ;;
+diff -Naur gdb-9.1-orig/gnulib/import/m4/realloc.m4 gdb-9.1/gnulib/import/m4/realloc.m4
+--- gdb-9.1-orig/gnulib/import/m4/realloc.m4	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/m4/realloc.m4	2020-04-19 12:01:05.850741600 +0300
+@@ -33,7 +33,7 @@
+        [case "$host_os" in
+           # Guess yes on platforms where we know the result.
+           *-gnu* | freebsd* | netbsd* | openbsd* \
+-          | hpux* | solaris* | cygwin* | mingw*)
++          | hpux* | solaris* | cygwin* | msys* | mingw*)
+             ac_cv_func_realloc_0_nonnull=yes ;;
+           # If we don't know, assume the worst.
+           *) ac_cv_func_realloc_0_nonnull=no ;;
+diff -Naur gdb-9.1-orig/gnulib/import/m4/threadlib.m4 gdb-9.1/gnulib/import/m4/threadlib.m4
+--- gdb-9.1-orig/gnulib/import/m4/threadlib.m4	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/m4/threadlib.m4	2020-04-19 12:01:35.856943100 +0300
+@@ -68,7 +68,7 @@
+          dnl bugs that lead to endless loops or crashes. See
+          dnl <http://cygwin.com/ml/cygwin/2009-08/msg00283.html>.
+          osf*) gl_use_threads=no ;;
+-         cygwin*)
++         cygwin* | msys*)
+                case `uname -r` in
+                  1.[0-5].*) gl_use_threads=no ;;
+                  *)         gl_use_threads=yes ;;
+diff -Naur gdb-9.1-orig/gnulib/import/Makefile.am gdb-9.1/gnulib/import/Makefile.am
+--- gdb-9.1-orig/gnulib/import/Makefile.am	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/Makefile.am	2020-04-19 12:02:07.238763200 +0300
+@@ -795,7 +795,7 @@
+ 	  case '$(host_os)' in \
+ 	    darwin[56]*) \
+ 	      need_charset_alias=true ;; \
+-	    darwin* | cygwin* | mingw* | pw32* | cegcc*) \
++	    darwin* | cygwin* | msys* | mingw* | pw32* | cegcc*) \
+ 	      need_charset_alias=false ;; \
+ 	    *) \
+ 	      need_charset_alias=true ;; \
+diff -Naur gdb-9.1-orig/gnulib/import/Makefile.in gdb-9.1/gnulib/import/Makefile.in
+--- gdb-9.1-orig/gnulib/import/Makefile.in	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/gnulib/import/Makefile.in	2020-04-19 12:04:17.493213300 +0300
+@@ -2290,7 +2290,7 @@
+ 	  case '$(host_os)' in \
+ 	    darwin[56]*) \
+ 	      need_charset_alias=true ;; \
+-	    darwin* | cygwin* | mingw* | pw32* | cegcc*) \
++	    darwin* | cygwin* | msys* | mingw* | pw32* | cegcc*) \
+ 	      need_charset_alias=false ;; \
+ 	    *) \
+ 	      need_charset_alias=true ;; \
+diff -Naur gdb-9.1-orig/libctf/configure gdb-9.1/libctf/configure
+--- gdb-9.1-orig/libctf/configure	2020-02-08 15:49:30.000000000 +0300
++++ gdb-9.1/libctf/configure	2020-04-19 12:06:55.311051500 +0300
+@@ -5999,7 +5999,7 @@
+     lt_cv_sys_max_cmd_len=-1;
+     ;;
+ 
+-  cygwin* | mingw* | cegcc*)
++  cygwin* | msys* | mingw* | cegcc*)
+     # On Win9x/ME, this test blows up -- it succeeds, but takes
+     # about 5 minutes as the teststring grows exponentially.
+     # Worse, since 9x/ME are not pre-emptively multitasking,
+@@ -6341,7 +6341,7 @@
+   lt_cv_file_magic_test_file=/shlib/libc.so
+   ;;
+ 
+-cygwin*)
++cygwin* | msys*)
+   # func_win32_libid is a shell function defined in ltmain.sh
+   lt_cv_deplibs_check_method='file_magic ^x86 archive import|^x86 DLL'
+   lt_cv_file_magic_cmd='func_win32_libid'
+@@ -6921,7 +6921,7 @@
+ aix*)
+   symcode='[BCDT]'
+   ;;
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   symcode='[ABCDGISTW]'
+   ;;
+ hpux*)
+@@ -8506,7 +8506,7 @@
+       # PIC is the default for these OSes.
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       # Although the cygwin gcc ignores -fPIC, still need this for old-style
+@@ -8588,7 +8588,7 @@
+       fi
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       lt_prog_compiler_pic='-DDLL_EXPORT'
+@@ -9050,7 +9050,7 @@
+   extract_expsyms_cmds=
+ 
+   case $host_os in
+-  cygwin* | mingw* | pw32* | cegcc*)
++  cygwin* | msys* | mingw* | pw32* | cegcc*)
+     # FIXME: the MSVC++ port hasn't been tested in a loooong time
+     # When not using gcc, we currently assume that we are using
+     # Microsoft Visual C++.
+@@ -9165,7 +9165,7 @@
+       fi
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # _LT_TAGVAR(hardcode_libdir_flag_spec, ) is actually meaningless,
+       # as there is no search path for DLLs.
+       hardcode_libdir_flag_spec='-L$libdir'
+@@ -9596,7 +9596,7 @@
+       export_dynamic_flag_spec=-rdynamic
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # When not using gcc, we currently assume that we are using
+       # Microsoft Visual C++.
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+@@ -10497,14 +10497,14 @@
+   # libtool to hard-code these into programs
+   ;;
+ 
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   version_type=windows
+   shrext_cmds=".dll"
+   need_version=no
+   need_lib_prefix=no
+ 
+   case $GCC,$host_os in
+-  yes,cygwin* | yes,mingw* | yes,pw32* | yes,cegcc*)
++  yes,cygwin* | yes,msys* | yes,mingw* | yes,pw32* | yes,cegcc*)
+     library_names_spec='$libname.dll.a'
+     # DLL is installed to $(libdir)/../bin by postinstall_cmds
+     postinstall_cmds='base_file=`basename \${file}`~
+@@ -10528,6 +10528,12 @@
+ 
+       sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"
+       ;;
++    msys*)
++      # MSYS DLLs use 'msys-' prefix rather than 'lib'
++      soname_spec='`echo ${libname} | sed -e 's/^lib/msys-/'``echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext}'
++
++      sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"
++      ;;
+     mingw* | cegcc*)
+       # MinGW DLLs use traditional 'lib' prefix
+       soname_spec='${libname}`echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext}'
+@@ -11164,7 +11170,7 @@
+     lt_cv_dlopen_libs=
+     ;;
+ 
+-  cygwin*)
++  cygwin* | msys*)
+     lt_cv_dlopen="dlopen"
+     lt_cv_dlopen_libs=
+     ;;
+@@ -13195,6 +13201,12 @@
+       BFD_LIBADD="-L`pwd`/../bfd -lbfd"
+       ;;
+ 
++    *-*-msys*)
++      SHARED_LDFLAGS="-no-undefined"
++      SHARED_LIBADD="-L`pwd`/../libiberty -liberty -L`pwd`/../intl -lintl -lmsys-2.0"
++      BFD_LIBADD="-L`pwd`/../bfd -lbfd"
++      ;;
++
+     *-*-darwin*)
+       BFD_LIBADD="-Wl,`pwd`/../bfd/.libs/libbfd.dylib"
+       BFD_DEPENDENCIES="../bfd/libbfd.la"
+diff -Naur gdb-9.1-orig/libctf/configure.ac gdb-9.1/libctf/configure.ac
+--- gdb-9.1-orig/libctf/configure.ac	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/libctf/configure.ac	2020-04-19 12:07:57.046996100 +0300
+@@ -188,6 +188,12 @@
+       BFD_LIBADD="-L`pwd`/../bfd -lbfd"
+       ;;
+ 
++    *-*-msys*)
++      SHARED_LDFLAGS="-no-undefined"
++      SHARED_LIBADD="-L`pwd`/../libiberty -liberty -L`pwd`/../intl -lintl -lmsys-2.0"
++      BFD_LIBADD="-L`pwd`/../bfd -lbfd"
++      ;;
++
+     *-*-darwin*)
+       BFD_LIBADD="-Wl,`pwd`/../bfd/.libs/libbfd.dylib"
+       BFD_DEPENDENCIES="../bfd/libbfd.la"
+diff -Naur gdb-9.1-orig/libdecnumber/configure gdb-9.1/libdecnumber/configure
+--- gdb-9.1-orig/libdecnumber/configure	2018-11-07 22:00:24.000000000 +0300
++++ gdb-9.1/libdecnumber/configure	2020-04-19 12:08:34.214779800 +0300
+@@ -4767,7 +4767,8 @@
+     powerpc*-*-linux* | i?86*-*-linux* | x86_64*-*-linux* | s390*-*-linux* | \
+     i?86*-*-elfiamcu | i?86*-*-gnu* | x86_64*-*-gnu* | \
+     i?86*-*-mingw* | x86_64*-*-mingw* | \
+-    i?86*-*-cygwin* | x86_64*-*-cygwin*)
++    i?86*-*-cygwin* | x86_64*-*-cygwin* | \
++    i?86*-*-msys* | x86_64*-*-msys*)
+       enable_decimal_float=yes
+       ;;
+     *)
+diff -Naur gdb-9.1-orig/libiberty/configure gdb-9.1/libiberty/configure
+--- gdb-9.1-orig/libiberty/configure	2018-12-24 05:59:29.000000000 +0300
++++ gdb-9.1/libiberty/configure	2020-04-19 11:28:16.111950500 +0300
+@@ -5183,6 +5183,8 @@
+ 	;;
+     i[34567]86-*-cygwin* | x86_64-*-cygwin*)
+ 	;;
++    i[34567]86-*-msys* | x86_64-*-msys*)
++	;;
+     i[34567]86-*-mingw* | x86_64-*-mingw*)
+ 	;;
+     i[34567]86-*-interix[3-9]*)
+@@ -6255,7 +6257,7 @@
+ 
+ 
+ case "${host}" in
+-  *-*-cygwin* | *-*-mingw*)
++  *-*-cygwin* | *-*-msys* | *-*-mingw*)
+     $as_echo "#define HAVE_SYS_ERRLIST 1" >>confdefs.h
+ 
+     $as_echo "#define HAVE_SYS_NERR 1" >>confdefs.h
+diff -Naur gdb-9.1-orig/libiberty/configure.ac gdb-9.1/libiberty/configure.ac
+--- gdb-9.1-orig/libiberty/configure.ac	2018-12-24 05:59:29.000000000 +0300
++++ gdb-9.1/libiberty/configure.ac	2020-04-19 11:28:16.465005200 +0300
+@@ -549,7 +549,7 @@
+ AC_SUBST(target_header_dir)
+ 
+ case "${host}" in
+-  *-*-cygwin* | *-*-mingw*)
++  *-*-cygwin* | *-*-msys* | *-*-mingw*)
+     AC_DEFINE(HAVE_SYS_ERRLIST)
+     AC_DEFINE(HAVE_SYS_NERR)
+     ;;
+diff -Naur gdb-9.1-orig/libtool.m4 gdb-9.1/libtool.m4
+--- gdb-9.1-orig/libtool.m4	2018-06-27 00:37:28.000000000 +0300
++++ gdb-9.1/libtool.m4	2020-04-19 11:28:16.830994400 +0300
+@@ -1491,7 +1491,7 @@
+     lt_cv_sys_max_cmd_len=-1;
+     ;;
+ 
+-  cygwin* | mingw* | cegcc*)
++  cygwin* | msys* | mingw* | cegcc*)
+     # On Win9x/ME, this test blows up -- it succeeds, but takes
+     # about 5 minutes as the teststring grows exponentially.
+     # Worse, since 9x/ME are not pre-emptively multitasking,
+@@ -1733,7 +1733,7 @@
+     lt_cv_dlopen_libs=
+     ;;
+ 
+-  cygwin*)
++  cygwin* | msys*)
+     lt_cv_dlopen="dlopen"
+     lt_cv_dlopen_libs=
+     ;;
+@@ -2204,14 +2204,14 @@
+   # libtool to hard-code these into programs
+   ;;
+ 
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   version_type=windows
+   shrext_cmds=".dll"
+   need_version=no
+   need_lib_prefix=no
+ 
+   case $GCC,$host_os in
+-  yes,cygwin* | yes,mingw* | yes,pw32* | yes,cegcc*)
++  yes,cygwin* | yes,msys* | yes,mingw* | yes,pw32* | yes,cegcc*)
+     library_names_spec='$libname.dll.a'
+     # DLL is installed to $(libdir)/../bin by postinstall_cmds
+     postinstall_cmds='base_file=`basename \${file}`~
+@@ -2235,6 +2235,12 @@
+ m4_if([$1], [],[
+       sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"])
+       ;;
++    msys*)
++      # Msys DLLs use 'msys-' prefix rather than 'lib'
++      soname_spec='`echo ${libname} | sed -e 's/^lib/msys-/'``echo ${release} | $SED -e 's/[[.]]/-/g'`${versuffix}${shared_ext}'
++m4_if([$1], [],[
++      sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"])
++      ;;
+     mingw* | cegcc*)
+       # MinGW DLLs use traditional 'lib' prefix
+       soname_spec='${libname}`echo ${release} | $SED -e 's/[[.]]/-/g'`${versuffix}${shared_ext}'
+@@ -3001,7 +3007,7 @@
+   lt_cv_file_magic_test_file=/shlib/libc.so
+   ;;
+ 
+-cygwin*)
++cygwin* | msys*)
+   # func_win32_libid is a shell function defined in ltmain.sh
+   lt_cv_deplibs_check_method='file_magic ^x86 archive import|^x86 DLL'
+   lt_cv_file_magic_cmd='func_win32_libid'
+@@ -3285,7 +3291,7 @@
+ [AC_REQUIRE([AC_CANONICAL_HOST])dnl
+ LIBM=
+ case $host in
+-*-*-beos* | *-*-cegcc* | *-*-cygwin* | *-*-haiku* | *-*-pw32* | *-*-darwin*)
++*-*-beos* | *-*-cegcc* | *-*-cygwin* | *-*-msys* | *-*-haiku* | *-*-pw32* | *-*-darwin*)
+   # These system don't have libm, or don't need it
+   ;;
+ *-ncr-sysv4.3*)
+@@ -3360,7 +3366,7 @@
+ aix*)
+   symcode='[[BCDT]]'
+   ;;
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   symcode='[[ABCDGISTW]]'
+   ;;
+ hpux*)
+@@ -3607,7 +3613,7 @@
+     beos* | irix5* | irix6* | nonstopux* | osf3* | osf4* | osf5*)
+       # PIC is the default for these OSes.
+       ;;
+-    mingw* | cygwin* | os2* | pw32* | cegcc*)
++    mingw* | cygwin* | msys* | os2* | pw32* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       # Although the cygwin gcc ignores -fPIC, still need this for old-style
+@@ -3920,7 +3926,7 @@
+       # PIC is the default for these OSes.
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       # Although the cygwin gcc ignores -fPIC, still need this for old-style
+@@ -4003,7 +4009,7 @@
+       fi
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       m4_if([$1], [GCJ], [],
+@@ -4236,7 +4242,7 @@
+   pw32*)
+     _LT_TAGVAR(export_symbols_cmds, $1)="$ltdll_cmds"
+   ;;
+-  cygwin* | mingw* | cegcc*)
++  cygwin* | msys* | mingw* | cegcc*)
+     _LT_TAGVAR(export_symbols_cmds, $1)='$NM $libobjs $convenience | $global_symbol_pipe | $SED -e '\''/^[[BCDGRS]][[ ]]/s/.*[[ ]]\([[^ ]]*\)/\1 DATA/;/^.*[[ ]]__nm__/s/^.*[[ ]]__nm__\([[^ ]]*\)[[ ]][[^ ]]*/\1 DATA/;/^I[[ ]]/d;/^[[AITW]][[ ]]/s/.* //'\'' | sort | uniq > $export_symbols'
+   ;;
+   *)
+@@ -4288,7 +4294,7 @@
+   extract_expsyms_cmds=
+ 
+   case $host_os in
+-  cygwin* | mingw* | pw32* | cegcc*)
++  cygwin* | msys* | mingw* | pw32* | cegcc*)
+     # FIXME: the MSVC++ port hasn't been tested in a loooong time
+     # When not using gcc, we currently assume that we are using
+     # Microsoft Visual C++.
+@@ -4403,7 +4409,7 @@
+       fi
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # _LT_TAGVAR(hardcode_libdir_flag_spec, $1) is actually meaningless,
+       # as there is no search path for DLLs.
+       _LT_TAGVAR(hardcode_libdir_flag_spec, $1)='-L$libdir'
+@@ -4776,7 +4782,7 @@
+       _LT_TAGVAR(export_dynamic_flag_spec, $1)=-rdynamic
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # When not using gcc, we currently assume that we are using
+       # Microsoft Visual C++.
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+@@ -5720,7 +5726,7 @@
+         esac
+         ;;
+ 
+-      cygwin* | mingw* | pw32* | cegcc*)
++      cygwin* | msys* | mingw* | pw32* | cegcc*)
+         # _LT_TAGVAR(hardcode_libdir_flag_spec, $1) is actually meaningless,
+         # as there is no search path for DLLs.
+         _LT_TAGVAR(hardcode_libdir_flag_spec, $1)='-L$libdir'
+diff -Naur gdb-9.1-orig/ltmain.sh gdb-9.1/ltmain.sh
+--- gdb-9.1-orig/ltmain.sh	2014-02-26 19:21:42.000000000 +0400
++++ gdb-9.1/ltmain.sh	2020-04-19 11:28:17.015673000 +0300
+@@ -976,7 +976,7 @@
+ 
+ 
+   case $host in
+-    *cygwin* | *mingw* | *pw32* | *cegcc* | *solaris2* )
++    *cygwin* | *msys* | *mingw* | *pw32* | *cegcc* | *solaris2* )
+       # don't eliminate duplications in $postdeps and $predeps
+       opt_duplicate_compiler_generated_deps=:
+       ;;
+@@ -1453,7 +1453,7 @@
+ 
+     # On Cygwin there's no "real" PIC flag so we must build both object types
+     case $host_os in
+-    cygwin* | mingw* | pw32* | os2* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | os2* | cegcc*)
+       pic_mode=default
+       ;;
+     esac
+@@ -2279,7 +2279,7 @@
+ 	      'exit $?'
+ 	  tstripme="$stripme"
+ 	  case $host_os in
+-	  cygwin* | mingw* | pw32* | cegcc*)
++	  cygwin* | msys* | mingw* | pw32* | cegcc*)
+ 	    case $realname in
+ 	    *.dll.a)
+ 	      tstripme=""
+@@ -2385,7 +2385,7 @@
+ 
+ 	# Do a test to see if this is really a libtool program.
+ 	case $host in
+-	*cygwin* | *mingw*)
++	*cygwin* | *msys* | *mingw*)
+ 	    if func_ltwrapper_executable_p "$file"; then
+ 	      func_ltwrapper_scriptname "$file"
+ 	      wrapper=$func_ltwrapper_scriptname_result
+@@ -2460,7 +2460,7 @@
+ 	# remove .exe since cygwin /usr/bin/install will append another
+ 	# one anyway
+ 	case $install_prog,$host in
+-	*/usr/bin/install*,*cygwin*)
++	*/usr/bin/install*,*cygwin*|*/usr/bin/install*,*msys*)
+ 	  case $file:$destfile in
+ 	  *.exe:*.exe)
+ 	    # this is ok
+@@ -2595,7 +2595,7 @@
+ 	      $RM $export_symbols
+ 	      ${SED} -n -e '/^: @PROGRAM@ $/d' -e 's/^.* \(.*\)$/\1/p' < "$nlist" > "$export_symbols"
+ 	      case $host in
+-	      *cygwin* | *mingw* | *cegcc* )
++	      *cygwin* | *msys* | *mingw* | *cegcc* )
+                 echo EXPORTS > "$output_objdir/$outputname.def"
+                 cat "$export_symbols" >> "$output_objdir/$outputname.def"
+ 	        ;;
+@@ -2607,7 +2607,7 @@
+ 	      $GREP -f "$output_objdir/$outputname.exp" < "$nlist" > "$nlist"T
+ 	      $MV "$nlist"T "$nlist"
+ 	      case $host in
+-	        *cygwin* | *mingw* | *cegcc* )
++	        *cygwin* | *msys* | *mingw* | *cegcc* )
+ 	          echo EXPORTS > "$output_objdir/$outputname.def"
+ 	          cat "$nlist" >> "$output_objdir/$outputname.def"
+ 	          ;;
+@@ -2663,7 +2663,7 @@
+ } lt_dlsymlist;
+ "
+ 	  case $host in
+-	  *cygwin* | *mingw* | *cegcc* )
++	  *cygwin* | *msys* | *mingw* | *cegcc* )
+ 	    echo >> "$output_objdir/$my_dlsyms" "\
+ /* DATA imports from DLLs on WIN32 con't be const, because
+    runtime relocations are performed -- see ld's documentation
+@@ -2749,7 +2749,7 @@
+ 	# Transform the symbol file into the correct name.
+ 	symfileobj="$output_objdir/${my_outputname}S.$objext"
+ 	case $host in
+-	*cygwin* | *mingw* | *cegcc* )
++	*cygwin* | *msys* | *mingw* | *cegcc* )
+ 	  if test -f "$output_objdir/$my_outputname.def"; then
+ 	    compile_command=`$ECHO "$compile_command" | $SED "s%@SYMFILE@%$output_objdir/$my_outputname.def $symfileobj%"`
+ 	    finalize_command=`$ECHO "$finalize_command" | $SED "s%@SYMFILE@%$output_objdir/$my_outputname.def $symfileobj%"`
+@@ -3192,7 +3192,7 @@
+             func_to_host_path_result=`( cmd //c echo "$1" ) 2>/dev/null |
+               $SED -e 's/[ ]*$//' -e "$lt_sed_naive_backslashify"`
+             ;;
+-          *cygwin* )
++          *cygwin* | *msys* )
+             func_to_host_path_result=`cygpath -w "$1" |
+ 	      $SED -e "$lt_sed_naive_backslashify"`
+             ;;
+@@ -3265,7 +3265,7 @@
+ 	      ( cmd //c echo "$func_to_host_pathlist_tmp1" ) 2>/dev/null |
+ 	      $SED -e 's/[ ]*$//' -e "$lt_sed_naive_backslashify"`
+             ;;
+-          *cygwin* )
++          *cygwin* | *msys* )
+             func_to_host_pathlist_result=`cygpath -w -p "$func_to_host_pathlist_tmp1" |
+               $SED -e "$lt_sed_naive_backslashify"`
+             ;;
+@@ -3571,7 +3571,7 @@
+ 	{
+ EOF
+ 	    case "$host" in
+-	      *mingw* | *cygwin* )
++	      *mingw* | *cygwin* | *msys* )
+ 		# make stdout use "unix" line endings
+ 		echo "          setmode(1,_O_BINARY);"
+ 		;;
+@@ -4233,7 +4233,7 @@
+ {
+     $opt_debug
+     case $host in
+-    *-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
++    *-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
+       # It is impossible to link a dll without this setting, and
+       # we shouldn't force the makefile maintainer to figure out
+       # which system we are compiling for in order to pass an extra
+@@ -4713,7 +4713,7 @@
+ 	  ;;
+ 	esac
+ 	case $host in
+-	*-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
++	*-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
+ 	  testbindir=`$ECHO "$dir" | $SED 's*/lib$*/bin*'`
+ 	  case :$dllsearchpath: in
+ 	  *":$dir:"*) ;;
+@@ -4733,7 +4733,7 @@
+       -l*)
+ 	if test "X$arg" = "X-lc" || test "X$arg" = "X-lm"; then
+ 	  case $host in
+-	  *-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-beos* | *-cegcc* | *-*-haiku*)
++	  *-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-beos* | *-cegcc* | *-*-haiku*)
+ 	    # These systems don't actually have a C or math library (as such)
+ 	    continue
+ 	    ;;
+@@ -4813,7 +4813,7 @@
+ 
+       -no-install)
+ 	case $host in
+-	*-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-*-darwin* | *-cegcc*)
++	*-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-*-darwin* | *-cegcc*)
+ 	  # The PATH hackery in wrapper scripts is required on Windows
+ 	  # and Darwin in order for the loader to find any dlls it needs.
+ 	  func_warning "\`-no-install' is ignored for $host"
+@@ -5772,7 +5772,7 @@
+ 	if test -n "$library_names" &&
+ 	   { test "$use_static_libs" = no || test -z "$old_library"; }; then
+ 	  case $host in
+-	  *cygwin* | *mingw* | *cegcc*)
++	  *cygwin* | *msys* | *mingw* | *cegcc*)
+ 	      # No point in relinking DLLs because paths are not encoded
+ 	      notinst_deplibs="$notinst_deplibs $lib"
+ 	      need_relink=no
+@@ -5842,7 +5842,7 @@
+ 	    elif test -n "$soname_spec"; then
+ 	      # bleh windows
+ 	      case $host in
+-	      *cygwin* | mingw* | *cegcc*)
++	      *cygwin* | *msys* | mingw* | *cegcc*)
+ 	        func_arith $current - $age
+ 		major=$func_arith_result
+ 		versuffix="-$major"
+@@ -6693,7 +6693,7 @@
+       if test "$build_libtool_libs" = yes; then
+ 	if test -n "$rpath"; then
+ 	  case $host in
+-	  *-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-*-beos* | *-cegcc* | *-*-haiku*)
++	  *-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-*-beos* | *-cegcc* | *-*-haiku*)
+ 	    # these systems don't actually have a c library (as such)!
+ 	    ;;
+ 	  *-*-rhapsody* | *-*-darwin1.[012])
+@@ -7194,7 +7194,7 @@
+ 
+ 	orig_export_symbols=
+ 	case $host_os in
+-	cygwin* | mingw* | cegcc*)
++	cygwin* | msys* | mingw* | cegcc*)
+ 	  if test -n "$export_symbols" && test -z "$export_symbols_regex"; then
+ 	    # exporting using user supplied symfile
+ 	    if test "x`$SED 1q $export_symbols`" != xEXPORTS; then
+@@ -7710,7 +7710,7 @@
+ 
+     prog)
+       case $host in
+-	*cygwin*) func_stripname '' '.exe' "$output"
++	*cygwin* | *msys*) func_stripname '' '.exe' "$output"
+ 	          output=$func_stripname_result.exe;;
+       esac
+       test -n "$vinfo" && \
+@@ -7823,7 +7823,7 @@
+ 	  esac
+ 	fi
+ 	case $host in
+-	*-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
++	*-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-os2* | *-cegcc*)
+ 	  testbindir=`${ECHO} "$libdir" | ${SED} -e 's*/lib$*/bin*'`
+ 	  case :$dllsearchpath: in
+ 	  *":$libdir:"*) ;;
+@@ -7901,7 +7901,7 @@
+         # Disable wrappers for cegcc and mingw32ce hosts, we are cross compiling anyway.
+         wrappers_required=no
+         ;;
+-      *cygwin* | *mingw* )
++      *cygwin* | *msys* | *mingw* )
+         if test "$build_libtool_libs" != yes; then
+           wrappers_required=no
+         fi
+@@ -8029,14 +8029,14 @@
+ 	esac
+ 	# test for cygwin because mv fails w/o .exe extensions
+ 	case $host in
+-	  *cygwin*)
++	  *cygwin* | *msys*)
+ 	    exeext=.exe
+ 	    func_stripname '' '.exe' "$outputname"
+ 	    outputname=$func_stripname_result ;;
+ 	  *) exeext= ;;
+ 	esac
+ 	case $host in
+-	  *cygwin* | *mingw* )
++	  *cygwin* | *msys* | *mingw* )
+ 	    func_dirname_and_basename "$output" "" "."
+ 	    output_name=$func_basename_result
+ 	    output_path=$func_dirname_result
+@@ -8343,7 +8343,7 @@
+ 	  # tests/bindir.at for full details.
+ 	  tdlname=$dlname
+ 	  case $host,$output,$installed,$module,$dlname in
+-	    *cygwin*,*lai,yes,no,*.dll | *mingw*,*lai,yes,no,*.dll | *cegcc*,*lai,yes,no,*.dll)
++	    *cygwin*,*lai,yes,no,*.dll | *msys*,*lai,yes,no,*.dll | *mingw*,*lai,yes,no,*.dll | *cegcc*,*lai,yes,no,*.dll)
+ 	      # If a -bindir argument was supplied, place the dll there.
+ 	      if test "x$bindir" != x ;
+ 	      then
+diff -Naur gdb-9.1-orig/ltoptions.m4 gdb-9.1/ltoptions.m4
+--- gdb-9.1-orig/ltoptions.m4	2013-12-22 14:09:57.000000000 +0400
++++ gdb-9.1/ltoptions.m4	2020-04-19 11:28:17.198359300 +0300
+@@ -126,7 +126,7 @@
+ [enable_win32_dll=yes
+ 
+ case $host in
+-*-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-cegcc*)
++*-*-cygwin* | *-*-msys* | *-*-mingw* | *-*-pw32* | *-*-cegcc*)
+   AC_CHECK_TOOL(AS, as, false)
+   AC_CHECK_TOOL(DLLTOOL, dlltool, false)
+   AC_CHECK_TOOL(OBJDUMP, objdump, false)
+diff -Naur gdb-9.1-orig/opcodes/configure gdb-9.1/opcodes/configure
+--- gdb-9.1-orig/opcodes/configure	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/opcodes/configure	2020-04-19 11:28:17.384852100 +0300
+@@ -6007,7 +6007,7 @@
+     lt_cv_sys_max_cmd_len=-1;
+     ;;
+ 
+-  cygwin* | mingw* | cegcc*)
++  cygwin* | msys* | mingw* | cegcc*)
+     # On Win9x/ME, this test blows up -- it succeeds, but takes
+     # about 5 minutes as the teststring grows exponentially.
+     # Worse, since 9x/ME are not pre-emptively multitasking,
+@@ -6349,7 +6349,7 @@
+   lt_cv_file_magic_test_file=/shlib/libc.so
+   ;;
+ 
+-cygwin*)
++cygwin* | msys*)
+   # func_win32_libid is a shell function defined in ltmain.sh
+   lt_cv_deplibs_check_method='file_magic ^x86 archive import|^x86 DLL'
+   lt_cv_file_magic_cmd='func_win32_libid'
+@@ -6929,7 +6929,7 @@
+ aix*)
+   symcode='[BCDT]'
+   ;;
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   symcode='[ABCDGISTW]'
+   ;;
+ hpux*)
+@@ -8514,7 +8514,7 @@
+       # PIC is the default for these OSes.
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       # Although the cygwin gcc ignores -fPIC, still need this for old-style
+@@ -8596,7 +8596,7 @@
+       fi
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       lt_prog_compiler_pic='-DDLL_EXPORT'
+@@ -9058,7 +9058,7 @@
+   extract_expsyms_cmds=
+ 
+   case $host_os in
+-  cygwin* | mingw* | pw32* | cegcc*)
++  cygwin* | msys* | mingw* | pw32* | cegcc*)
+     # FIXME: the MSVC++ port hasn't been tested in a loooong time
+     # When not using gcc, we currently assume that we are using
+     # Microsoft Visual C++.
+@@ -9173,7 +9173,7 @@
+       fi
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # _LT_TAGVAR(hardcode_libdir_flag_spec, ) is actually meaningless,
+       # as there is no search path for DLLs.
+       hardcode_libdir_flag_spec='-L$libdir'
+@@ -9604,7 +9604,7 @@
+       export_dynamic_flag_spec=-rdynamic
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # When not using gcc, we currently assume that we are using
+       # Microsoft Visual C++.
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+@@ -10505,14 +10505,14 @@
+   # libtool to hard-code these into programs
+   ;;
+ 
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   version_type=windows
+   shrext_cmds=".dll"
+   need_version=no
+   need_lib_prefix=no
+ 
+   case $GCC,$host_os in
+-  yes,cygwin* | yes,mingw* | yes,pw32* | yes,cegcc*)
++  yes,cygwin* | yes,msys* | yes,mingw* | yes,pw32* | yes,cegcc*)
+     library_names_spec='$libname.dll.a'
+     # DLL is installed to $(libdir)/../bin by postinstall_cmds
+     postinstall_cmds='base_file=`basename \${file}`~
+@@ -10536,6 +10536,12 @@
+ 
+       sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"
+       ;;
++    msys*)
++      # Msys DLLs use 'msys-' prefix rather than 'lib'
++      soname_spec='`echo ${libname} | sed -e 's/^lib/msys-/'``echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext}'
++
++      sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"
++      ;;
+     mingw* | cegcc*)
+       # MinGW DLLs use traditional 'lib' prefix
+       soname_spec='${libname}`echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext}'
+@@ -11172,7 +11178,7 @@
+     lt_cv_dlopen_libs=
+     ;;
+ 
+-  cygwin*)
++  cygwin* | msys*)
+     lt_cv_dlopen="dlopen"
+     lt_cv_dlopen_libs=
+     ;;
+@@ -12617,7 +12623,7 @@
+ 
+ LIBM=
+ case $host in
+-*-*-beos* | *-*-cegcc* | *-*-cygwin* | *-*-haiku* | *-*-pw32* | *-*-darwin*)
++*-*-beos* | *-*-cegcc* | *-*-cygwin* | *-*-msys* | *-*-haiku* | *-*-pw32* | *-*-darwin*)
+   # These system don't have libm, or don't need it
+   ;;
+ *-ncr-sysv4.3*)
+@@ -12787,6 +12793,10 @@
+       SHARED_LDFLAGS="-no-undefined"
+       SHARED_LIBADD="-L`pwd`/../bfd -lbfd -L`pwd`/../libiberty -liberty -L`pwd`/../intl -lintl -lcygwin"
+       ;;
++    *-*-msys*)
++      SHARED_LDFLAGS="-no-undefined"
++      SHARED_LIBADD="-L`pwd`/../bfd -lbfd -L`pwd`/../libiberty -liberty -L`pwd`/../intl -lintl -lmsys-2.0"
++      ;;
+    *-*-darwin*)
+      SHARED_LIBADD="-Wl,`pwd`/../bfd/.libs/libbfd.dylib ${SHARED_LIBADD}"
+      SHARED_DEPENDENCIES="../bfd/libbfd.la"
+diff -Naur gdb-9.1-orig/opcodes/configure.ac gdb-9.1/opcodes/configure.ac
+--- gdb-9.1-orig/opcodes/configure.ac	2020-02-08 15:50:14.000000000 +0300
++++ gdb-9.1/opcodes/configure.ac	2020-04-19 11:28:17.743877500 +0300
+@@ -178,6 +178,10 @@
+       SHARED_LDFLAGS="-no-undefined"
+       SHARED_LIBADD="-L`pwd`/../bfd -lbfd -L`pwd`/../libiberty -liberty -L`pwd`/../intl -lintl -lcygwin"
+       ;;
++    *-*-msys*)
++      SHARED_LDFLAGS="-no-undefined"
++      SHARED_LIBADD="-L`pwd`/../bfd -lbfd -L`pwd`/../libiberty -liberty -L`pwd`/../intl -lintl -lmsys-2.0"
++      ;;
+    *-*-darwin*)
+      SHARED_LIBADD="-Wl,`pwd`/../bfd/.libs/libbfd.dylib ${SHARED_LIBADD}"
+      SHARED_DEPENDENCIES="../bfd/libbfd.la"
+diff -Naur gdb-9.1-orig/readline/readline/configure gdb-9.1/readline/readline/configure
+--- gdb-9.1-orig/readline/readline/configure	2019-11-19 04:10:41.000000000 +0300
++++ gdb-9.1/readline/readline/configure	2020-04-19 12:10:27.951039600 +0300
+@@ -2596,7 +2596,7 @@
+ CROSS_COMPILE=
+ if test "x$cross_compiling" = "xyes"; then
+     case "${host}" in
+-    *-cygwin*)
++    *-cygwin* | *-msys*)
+         cross_cache=${srcdir}/cross-build/cygwin.cache
+         ;;
+     *-mingw*)
+diff -Naur gdb-9.1-orig/readline/readline/configure.ac gdb-9.1/readline/readline/configure.ac
+--- gdb-9.1-orig/readline/readline/configure.ac	2019-11-19 04:10:41.000000000 +0300
++++ gdb-9.1/readline/readline/configure.ac	2020-04-19 12:10:55.668169300 +0300
+@@ -75,7 +75,7 @@
+ CROSS_COMPILE=
+ if test "x$cross_compiling" = "xyes"; then
+     case "${host}" in
+-    *-cygwin*)
++    *-cygwin* | *-msys*)
+         cross_cache=${srcdir}/cross-build/cygwin.cache
+         ;;
+     *-mingw*)
+diff -Naur gdb-9.1-orig/readline/readline/support/config.guess gdb-9.1/readline/readline/support/config.guess
+--- gdb-9.1-orig/readline/readline/support/config.guess	2019-11-19 04:10:41.000000000 +0300
++++ gdb-9.1/readline/readline/support/config.guess	2020-04-19 12:11:48.978560700 +0300
+@@ -906,6 +906,9 @@
+     amd64:CYGWIN*:*:* | x86_64:CYGWIN*:*:*)
+ 	echo x86_64-pc-cygwin
+ 	exit ;;
++    amd64:MSYS*:*:* | x86_64:MSYS*:*:*)
++	echo x86_64-pc-msys
++	exit ;;
+     prep*:SunOS:5.*:*)
+ 	echo powerpcle-unknown-solaris2"`echo "$UNAME_RELEASE"|sed -e 's/[^.]*//'`"
+ 	exit ;;
+diff -Naur gdb-9.1-orig/readline/readline/support/config.rpath gdb-9.1/readline/readline/support/config.rpath
+--- gdb-9.1-orig/readline/readline/support/config.rpath	2019-11-19 04:10:41.000000000 +0300
++++ gdb-9.1/readline/readline/support/config.rpath	2020-04-19 12:12:36.046281400 +0300
+@@ -57,7 +57,7 @@
+     aix*)
+       wl='-Wl,'
+       ;;
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       ;;
+     hpux9* | hpux10* | hpux11*)
+       wl='-Wl,'
+@@ -149,7 +149,7 @@
+ hardcode_minus_L=no
+ 
+ case "$host_os" in
+-  cygwin* | mingw* | pw32* | cegcc*)
++  cygwin* | msys* | mingw* | pw32* | cegcc*)
+     # FIXME: the MSVC++ port hasn't been tested in a loooong time
+     # When not using gcc, we currently assume that we are using
+     # Microsoft Visual C++.
+@@ -198,7 +198,7 @@
+         ld_shlibs=no
+       fi
+       ;;
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+       # no search path for DLLs.
+       hardcode_libdir_flag_spec='-L$libdir'
+@@ -348,7 +348,7 @@
+       ;;
+     bsdi[45]*)
+       ;;
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # When not using gcc, we currently assume that we are using
+       # Microsoft Visual C++.
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+@@ -533,7 +533,7 @@
+   bsdi[45]*)
+     library_names_spec='$libname$shrext'
+     ;;
+-  cygwin* | mingw* | pw32* | cegcc*)
++  cygwin* | msys* | mingw* | pw32* | cegcc*)
+     shrext=.dll
+     library_names_spec='$libname.dll.a $libname.lib'
+     ;;
+diff -Naur gdb-9.1-orig/readline/readline/support/shlib-install gdb-9.1/readline/readline/support/shlib-install
+--- gdb-9.1-orig/readline/readline/support/shlib-install	2019-11-19 04:10:41.000000000 +0300
++++ gdb-9.1/readline/readline/support/shlib-install	2020-04-19 12:13:01.444170000 +0300
+@@ -75,7 +75,7 @@
+ 	if [ -z "$uninstall" ]; then
+ 		chmod 755 ${INSTALLDIR}/${LIBNAME}
+ 	fi ;;
+-cygwin*|mingw*)
++cygwin*|msys*|mingw*)
+ 	IMPLIBNAME=`echo ${LIBNAME} \
+ 		| sed -e 's,^cyg,lib,' -e 's,[0-9]*.dll$,.dll.a,'`
+ 	if [ -z "$uninstall" ]; then
+@@ -194,7 +194,7 @@
+ 	fi
+ 	;;
+ 
+-cygwin*|mingw*)
++cygwin*|msys*|mingw*)
+ 	# Links to .dlls don't work.  Hence shobj-conf used DLLVERSION.dll
+ 	# instead of so.SHLIB_MAJOR.SHLIB_MINOR.  The postinstall above
+ 	# took care of everything else.
+diff -Naur gdb-9.1-orig/readline/readline/support/shobj-conf gdb-9.1/readline/readline/support/shobj-conf
+--- gdb-9.1-orig/readline/readline/support/shobj-conf	2019-11-19 04:10:41.000000000 +0300
++++ gdb-9.1/readline/readline/support/shobj-conf	2020-04-19 12:13:39.639306700 +0300
+@@ -535,6 +535,24 @@
+ 	fi
+ 	;;
+ 
++msys*)
++	SHOBJ_LD='$(CC)'
++	SHOBJ_LDFLAGS='-shared -Wl,--enable-auto-import -Wl,--enable-auto-image-base -Wl,--export-all -Wl,--out-implib=$(@).a'
++	SHLIB_LIBPREF='msys-'
++	SHLIB_LIBSUFF='dll'
++	SHLIB_LIBVERSION='$(SHLIB_DLLVERSION).$(SHLIB_LIBSUFF)'
++	SHLIB_LIBS='$(TERMCAP_LIB)'
++
++	SHLIB_DOT=
++	# For official cygwin releases, DLLVERSION will be defined in the
++	# environment of configure, and will be incremented any time the API
++	# changes in a non-backwards compatible manner.  Otherwise, it is just
++	# SHLIB_MAJOR.
++	if [ -n "$DLLVERSION" ] ; then
++		SHLIB_DLLVERSION="$DLLVERSION"
++	fi
++	;;
++
+ mingw*)
+ 	SHOBJ_LD='$(CC)'
+ 	SHOBJ_LDFLAGS='-shared -Wl,--enable-auto-import -Wl,--enable-auto-image-base -Wl,--export-all -Wl,--out-implib=$(@).a'
+diff -Naur gdb-9.1-orig/sim/aarch64/configure gdb-9.1/sim/aarch64/configure
+--- gdb-9.1-orig/sim/aarch64/configure	2018-06-27 00:37:28.000000000 +0300
++++ gdb-9.1/sim/aarch64/configure	2020-04-19 12:16:43.386632300 +0300
+@@ -6281,7 +6281,7 @@
+     lt_cv_sys_max_cmd_len=-1;
+     ;;
+ 
+-  cygwin* | mingw* | cegcc*)
++  cygwin* | msys* | mingw* | cegcc*)
+     # On Win9x/ME, this test blows up -- it succeeds, but takes
+     # about 5 minutes as the teststring grows exponentially.
+     # Worse, since 9x/ME are not pre-emptively multitasking,
+@@ -6623,7 +6623,7 @@
+   lt_cv_file_magic_test_file=/shlib/libc.so
+   ;;
+ 
+-cygwin*)
++cygwin* | msys*)
+   # func_win32_libid is a shell function defined in ltmain.sh
+   lt_cv_deplibs_check_method='file_magic ^x86 archive import|^x86 DLL'
+   lt_cv_file_magic_cmd='func_win32_libid'
+@@ -7245,7 +7245,7 @@
+ aix*)
+   symcode='[BCDT]'
+   ;;
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   symcode='[ABCDGISTW]'
+   ;;
+ hpux*)
+@@ -9954,7 +9954,7 @@
+       # PIC is the default for these OSes.
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       # Although the cygwin gcc ignores -fPIC, still need this for old-style
+@@ -10036,7 +10036,7 @@
+       fi
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       lt_prog_compiler_pic='-DDLL_EXPORT'
+@@ -10498,7 +10498,7 @@
+   extract_expsyms_cmds=
+ 
+   case $host_os in
+-  cygwin* | mingw* | pw32* | cegcc*)
++  cygwin* | msys* | mingw* | pw32* | cegcc*)
+     # FIXME: the MSVC++ port hasn't been tested in a loooong time
+     # When not using gcc, we currently assume that we are using
+     # Microsoft Visual C++.
+@@ -10613,7 +10613,7 @@
+       fi
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # _LT_TAGVAR(hardcode_libdir_flag_spec, ) is actually meaningless,
+       # as there is no search path for DLLs.
+       hardcode_libdir_flag_spec='-L$libdir'
+@@ -11044,7 +11044,7 @@
+       export_dynamic_flag_spec=-rdynamic
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # When not using gcc, we currently assume that we are using
+       # Microsoft Visual C++.
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+@@ -11945,14 +11945,14 @@
+   # libtool to hard-code these into programs
+   ;;
+ 
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   version_type=windows
+   shrext_cmds=".dll"
+   need_version=no
+   need_lib_prefix=no
+ 
+   case $GCC,$host_os in
+-  yes,cygwin* | yes,mingw* | yes,pw32* | yes,cegcc*)
++  yes,cygwin* | yes,msys* | yes,mingw* | yes,pw32* | yes,cegcc*)
+     library_names_spec='$libname.dll.a'
+     # DLL is installed to $(libdir)/../bin by postinstall_cmds
+     postinstall_cmds='base_file=`basename \${file}`~
+@@ -11975,6 +11975,11 @@
+       soname_spec='`echo ${libname} | sed -e 's/^lib/cyg/'``echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext}'
+ 
+       sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"
++    msys*)
++      # MSYS DLLs use 'msys-' prefix rather than 'lib'
++      soname_spec='`echo ${libname} | sed -e 's/^lib/msys-/'``echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext}'
++
++      sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"
+       ;;
+     mingw* | cegcc*)
+       # MinGW DLLs use traditional 'lib' prefix
+@@ -12612,7 +12617,7 @@
+     lt_cv_dlopen_libs=
+     ;;
+ 
+-  cygwin*)
++  cygwin* | msys*)
+     lt_cv_dlopen="dlopen"
+     lt_cv_dlopen_libs=
+     ;;
+diff -Naur gdb-9.1-orig/sim/arm/configure gdb-9.1/sim/arm/configure
+--- gdb-9.1-orig/sim/arm/configure	2018-06-27 00:37:28.000000000 +0300
++++ gdb-9.1/sim/arm/configure	2020-04-19 12:15:00.334779400 +0300
+@@ -6281,7 +6281,7 @@
+     lt_cv_sys_max_cmd_len=-1;
+     ;;
+ 
+-  cygwin* | mingw* | cegcc*)
++  cygwin* | msys* | mingw* | cegcc*)
+     # On Win9x/ME, this test blows up -- it succeeds, but takes
+     # about 5 minutes as the teststring grows exponentially.
+     # Worse, since 9x/ME are not pre-emptively multitasking,
+@@ -6623,7 +6623,7 @@
+   lt_cv_file_magic_test_file=/shlib/libc.so
+   ;;
+ 
+-cygwin*)
++cygwin* | msys*)
+   # func_win32_libid is a shell function defined in ltmain.sh
+   lt_cv_deplibs_check_method='file_magic ^x86 archive import|^x86 DLL'
+   lt_cv_file_magic_cmd='func_win32_libid'
+@@ -7245,7 +7245,7 @@
+ aix*)
+   symcode='[BCDT]'
+   ;;
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   symcode='[ABCDGISTW]'
+   ;;
+ hpux*)
+@@ -9954,7 +9954,7 @@
+       # PIC is the default for these OSes.
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       # Although the cygwin gcc ignores -fPIC, still need this for old-style
+@@ -10036,7 +10036,7 @@
+       fi
+       ;;
+ 
+-    mingw* | cygwin* | pw32* | os2* | cegcc*)
++    mingw* | cygwin* | msys* | pw32* | os2* | cegcc*)
+       # This hack is so that the source file can tell whether it is being
+       # built for inclusion in a dll (and should export symbols for example).
+       lt_prog_compiler_pic='-DDLL_EXPORT'
+@@ -10498,7 +10498,7 @@
+   extract_expsyms_cmds=
+ 
+   case $host_os in
+-  cygwin* | mingw* | pw32* | cegcc*)
++  cygwin* | msys* | mingw* | pw32* | cegcc*)
+     # FIXME: the MSVC++ port hasn't been tested in a loooong time
+     # When not using gcc, we currently assume that we are using
+     # Microsoft Visual C++.
+@@ -10613,7 +10613,7 @@
+       fi
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # _LT_TAGVAR(hardcode_libdir_flag_spec, ) is actually meaningless,
+       # as there is no search path for DLLs.
+       hardcode_libdir_flag_spec='-L$libdir'
+@@ -11044,7 +11044,7 @@
+       export_dynamic_flag_spec=-rdynamic
+       ;;
+ 
+-    cygwin* | mingw* | pw32* | cegcc*)
++    cygwin* | msys* | mingw* | pw32* | cegcc*)
+       # When not using gcc, we currently assume that we are using
+       # Microsoft Visual C++.
+       # hardcode_libdir_flag_spec is actually meaningless, as there is
+@@ -11945,14 +11945,14 @@
+   # libtool to hard-code these into programs
+   ;;
+ 
+-cygwin* | mingw* | pw32* | cegcc*)
++cygwin* | msys* | mingw* | pw32* | cegcc*)
+   version_type=windows
+   shrext_cmds=".dll"
+   need_version=no
+   need_lib_prefix=no
+ 
+   case $GCC,$host_os in
+-  yes,cygwin* | yes,mingw* | yes,pw32* | yes,cegcc*)
++  yes,cygwin* | yes,msys* | yes,mingw* | yes,pw32* | yes,cegcc*)
+     library_names_spec='$libname.dll.a'
+     # DLL is installed to $(libdir)/../bin by postinstall_cmds
+     postinstall_cmds='base_file=`basename \${file}`~
+@@ -11976,6 +11976,12 @@
+ 
+       sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"
+       ;;
++    msys*)
++      # MSYS DLLs use 'msys-' prefix rather than 'lib'
++      soname_spec='`echo ${libname} | sed -e 's/^lib/msys-/'``echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext}'
++
++      sys_lib_search_path_spec="$sys_lib_search_path_spec /usr/lib/w32api"
++      ;;
+     mingw* | cegcc*)
+       # MinGW DLLs use traditional 'lib' prefix
+       soname_spec='${libname}`echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext}'
+@@ -12612,7 +12618,7 @@
+     lt_cv_dlopen_libs=
+     ;;
+ 
+-  cygwin*)
++  cygwin* | msys*)
+     lt_cv_dlopen="dlopen"
+     lt_cv_dlopen_libs=
+     ;;

@@ -5,7 +5,7 @@ environment:
   PATH: C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Program Files\Git\cmd;C:\Program Files\7-Zip
   DEPLOY_PROVIDER: bintray
   BINTRAY_USER: jeroen
-  BINTRAY_TARGET: rtools-extra
+  BINTRAY_TARGET: rtools
   BINTRAY_PACKAGE: extra
   PACMAN_REPOSITORY: rtools-extra
   BUILD_URL: https://ci.appveyor.com/project/$(APPVEYOR_ACCOUNT_NAME)/$(APPVEYOR_PROJECT_NAME)/build/$(APPVEYOR_BUILD_VERSION)

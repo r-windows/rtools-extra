@@ -1,0 +1,139 @@
+From ef91df5ca767096015bedd6a81ef1008161d96d2 Mon Sep 17 00:00:00 2001
+From: Jon Turney <jon.turney@dronecode.org.uk>
+Date: Tue, 12 Jan 2016 22:26:26 +0000
+Subject: [PATCH 2/5] 7.8-windows-nat-cygwin.patch
+
+Remaining parts of 7.8-windows-nat-cygwin.patch not yet upstream.
+
+Signal changes:
+
+* Replace have_saved_context with signal_thread_id throughout, and store the
+thread id in it
+
+* In thread_rec(), only use the signal saved context if we are retrieving the
+context for the correct thread.
+
+* Clear ContextFlags in the signal saved context so we never attempt to restore
+it to the inferior
+
+Since the signal context is the context which will be restored after any signal
+handler has been run, to resume to it skips over the actual signal delivery.
+
+(Unfortunately, this isn't quite right.  If GDB decides it needs to single-step
+after continuing by setting FLAG_TRACE_BIT, we must alter the inferior state. So
+we potentially need to have both the signal saved context, and the actual
+context for the thread.  Which is not a straightforward change to make.)
+
+Unrelated changes:
+
+* An unclear change for detecting if it's an unexpected Cygwin message. Just
+checking for a leading 'cYg' should be enough?
+
+* Cast DWORD thread_id to int before returning it from get_windows_event.
+(I don't think this is needed.  If DWORD->int is a narrowing conversion, we
+have other problems...)
+
+* In one place, clarify that thread_rec()'s second parameter is a bool flag.
+(This should be done everywhere, or not)
+---
+ gdb/windows-nat.c | 28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
+
+diff --git a/gdb/windows-nat.c b/gdb/windows-nat.c
+index 3add8e63f9..0e366c3162 100644
+--- a/gdb/windows-nat.c
++++ b/gdb/windows-nat.c
+@@ -154,8 +154,7 @@ static GetConsoleFontSize_ftype *GetConsoleFontSize;
+ #   define bad_GetModuleFileNameEx bad_GetModuleFileNameExW
+ #endif
+ 
+-static int have_saved_context;	/* True if we've saved context from a
+-				   cygwin signal.  */
++static DWORD  signal_thread_id;	/* Non-zero if we saved context. */
+ #ifdef __CYGWIN__
+ static CONTEXT saved_context;	/* Containes the saved context from a
+ 				   cygwin signal.  */
+@@ -403,7 +402,8 @@ thread_rec (DWORD id, int get_context)
+       {
+ 	if (!th->suspended && get_context)
+ 	  {
+-	    if (get_context > 0 && id != current_event.dwThreadId)
++	    if (get_context > 0 && id != current_event.dwThreadId
++		&& id != signal_thread_id)
+ 	      {
+ 		if (SuspendThread (th->h) == (DWORD) -1)
+ 		  {
+@@ -612,7 +612,7 @@ windows_nat_target::fetch_registers (struct regcache *regcache, int r)
+   if (th->reload_context)
+     {
+ #ifdef __CYGWIN__
+-      if (have_saved_context)
++      if (signal_thread_id)
+ 	{
+ 	  /* Lie about where the program actually is stopped since
+ 	     cygwin has informed us that we should consider the signal
+@@ -620,7 +620,7 @@ windows_nat_target::fetch_registers (struct regcache *regcache, int r)
+ 	     "saved_context.  */
+ 	  memcpy (&th->context, &saved_context,
+ 		  __COPY_CONTEXT_SIZE);
+-	  have_saved_context = 0;
++	  signal_thread_id = 0;
+ 	}
+       else
+ #endif
+@@ -1007,7 +1007,11 @@ handle_output_debug_string (struct target_waitstatus *ourstatus)
+   else if (!startswith (s.get (), _CYGWIN_SIGNAL_STRING))
+     {
+ #ifdef __CYGWIN__
+-      if (!startswith (s.get (), "cYg"))
++      /* This looks like this is supposed to ignore all other expected Cygwin
++	 debug output (e.g. handle and strace output), but isn't quite right as
++	 strace output might be indicated by any 8 digit hex address. */
++      if (!startswith (s.get (), "cYg") || (strncmp (s.get () + 3, "FFFFFFFF", 8) != 0
++				     && strncmp (s.get () + 3, "std", 3) != 0))
+ #endif
+ 	{
+ 	  char *p = strchr (s.get (), '\0');
+@@ -1046,7 +1050,12 @@ handle_output_debug_string (struct target_waitstatus *ourstatus)
+ 					 &saved_context,
+ 					 __COPY_CONTEXT_SIZE, &n)
+ 		   && n == __COPY_CONTEXT_SIZE)
+-	    have_saved_context = 1;
++	    {
++	      signal_thread_id = retval;
++	      saved_context.ContextFlags = 0;  /* Don't attempt to call SetContext */
++	    }
++	  else
++	    retval = 0;
+ 	}
+     }
+ #endif
+@@ -1563,7 +1572,6 @@ get_windows_debug_event (struct target_ops *ops,
+   event_code = current_event.dwDebugEventCode;
+   ourstatus->kind = TARGET_WAITKIND_SPURIOUS;
+   th = NULL;
+-  have_saved_context = 0;
+ 
+   switch (event_code)
+     {
+@@ -1736,7 +1744,7 @@ get_windows_debug_event (struct target_ops *ops,
+     }
+ 
+ out:
+-  return thread_id;
++  return (int) thread_id;
+ }
+ 
+ /* Wait for interesting events to occur in the target process.  */
+@@ -3041,7 +3049,7 @@ windows_nat_target::get_tib_address (ptid_t ptid, CORE_ADDR *addr)
+ {
+   windows_thread_info *th;
+ 
+-  th = thread_rec (ptid.tid (), 0);
++  th = thread_rec (ptid.tid (), FALSE);
+   if (th == NULL)
+     return false;
+ 
+-- 
+2.21.0
+
